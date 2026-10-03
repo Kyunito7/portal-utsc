@@ -35,7 +35,7 @@
       return `<div class="wrap page"><div class="stack" style="gap:20px;max-width:1088px;margin-inline:auto">
         <div class="row-between">
           <div><h1 style="font-size:clamp(24px,3vw,30px)">Horario de clases</h1>
-            <span class="mono small muted">${U.fechaCorta(ini)} — ${U.fecha(fin)} · ${u.semestre}° Semestre ${u.grupo}</span></div>
+            <span class="mono small muted">${U.fechaCorta(ini)} — ${U.fecha(fin)} · ${u.semestre}° Cuatrimestre ${u.grupo}</span></div>
           <div class="row"><button class="btn btn-outline" data-a="semana" data-d="-1" aria-label="Semana anterior">←</button>
             <button class="btn btn-outline" data-a="hoy">Hoy</button><button class="btn btn-outline" data-a="semana" data-d="1" aria-label="Semana siguiente">→</button></div>
         </div>

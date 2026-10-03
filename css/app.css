@@ -1,3 +1,9 @@
+/* ---------- Fuentes (dentro del proyecto para que funcionen sin internet) ---------- */
+@font-face { font-family: "Outfit"; src: url("../fonts/outfit.woff2") format("woff2"); font-weight: 100 900; font-style: normal; font-display: swap; }
+@font-face { font-family: "Fraunces"; src: url("../fonts/fraunces.woff2") format("woff2"); font-weight: 100 900; font-style: normal; font-display: swap; }
+@font-face { font-family: "JetBrains Mono"; src: url("../fonts/jetbrains-mono-400.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "JetBrains Mono"; src: url("../fonts/jetbrains-mono-700.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+
 /* Portal Universitario UTSC
    Layout: barra superior oscura + barra de módulos + contenido centrado (máx. 1216px). */
 :root {
@@ -36,6 +42,8 @@
   --r-lg: 18px;
   --shadow: 0 10px 30px rgba(27, 31, 46, .12);
   --maxw: 1216px;
+  --ease: cubic-bezier(.2, .8, .2, 1);      /* salida suave, como apps nativas */
+  --resorte: cubic-bezier(.34, 1.56, .64, 1); /* pequeño rebote */
   --gutter: clamp(16px, 4vw, 70px);
   color-scheme: light;
 }
@@ -180,7 +188,7 @@ p { margin: 0; }
 .breadcrumb a { text-decoration: none; }
 .breadcrumb a:hover { color: var(--ink); }
 
-/* ---------- Login ---------- */
+/* ---------- Login y registro ---------- */
 .login {
   min-height: 100vh; display: grid; place-items: center; padding: 24px 16px;
   background:
@@ -188,19 +196,25 @@ p { margin: 0; }
     url("../img/campus-aereo.jpg") center / cover no-repeat,
     linear-gradient(160deg, #3b4a5a, #24303a 60%, #3c3324);
 }
-.login-inner { width: min(448px, 100%); display: grid; gap: 24px; justify-items: center; text-align: center; color: var(--white); }
-.login-logo { background: var(--white); padding: 6px 10px; border-radius: 4px; }
-.login-logo img { width: 80px; }
+.login-inner { width: min(448px, 100%); display: grid; gap: 24px; justify-items: center; text-align: center; color: var(--white); transition: width .3s var(--ease); }
+.login-inner.ancho { width: min(560px, 100%); }
+.login-logo { background: var(--white); padding: 6px 10px; border-radius: 4px; animation: aparecer .5s var(--ease) both; }
+.login-logo img { width: 80px; height: auto; }
 .login h1 { font-size: clamp(24px, 4vw, 30px); }
 .login .sub { color: #c9ccd8; font-weight: 600; }
 .login .sub2 { color: #9da2b6; font-size: 13px; }
-.login-card { width: 100%; background: var(--white); color: var(--ink); border-radius: var(--r-lg); overflow: hidden; text-align: left; box-shadow: var(--shadow); }
+.login-card { width: 100%; background: var(--white); color: var(--ink); border-radius: var(--r-lg); overflow: hidden; text-align: left; box-shadow: var(--shadow); animation: subir .45s .05s var(--ease) both; }
 .login-card header { background: var(--navy); color: var(--white); padding: 20px 24px; }
 .login-card header h2 { font-size: 19px; }
 .login-card header p { color: #a9aec2; font-size: 13px; }
-.login-card form { padding: 24px; display: grid; gap: 18px; }
+.login-form { padding: 24px; display: grid; gap: 18px; }
+.login-panel.cambio .login-form { animation: subir .35s var(--ease) both; }
 .login-hint { font-size: 12.5px; color: var(--muted); background: var(--sand); border-radius: var(--r-sm); padding: 10px 12px; }
-.login-alert { background: var(--red-soft); color: var(--red); border-radius: var(--r-sm); padding: 10px 12px; font-size: 14px; }
+.login-alert { background: var(--red-soft); color: var(--red); border-radius: var(--r-sm); padding: 10px 12px; font-size: 14px; animation: subir .25s var(--ease); }
+.login-switch { text-align: center; font-size: 14px; color: var(--muted); }
+.login-nota { text-align: center; font-size: 12.5px; color: var(--muted-2); }
+.sacudir { animation: sacudir .4s; }
+@keyframes sacudir { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
 
 /* ---------- Encabezado ---------- */
 .topbar { background: var(--navy); color: var(--white); position: sticky; top: env(safe-area-inset-top, 0px); z-index: 40; }
@@ -630,6 +644,98 @@ input[type=search].input {
 .sk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
 .sk-grid .sk { height: 110px; }
 @keyframes brillo { from { background-position: 200% 0; } to { background-position: -200% 0; } }
-.boot-login { min-height: 100vh; background: var(--navy); }
 .sin-sesion #shell { display: none; }
 .sin-sesion body { background: var(--navy); }
+
+/* =====================================================================
+   MOVIMIENTO Y FLUIDEZ
+   Solo se animan transform y opacity (no causan "reflow"), para ir a 60 fps.
+   ===================================================================== */
+@keyframes subir { from { opacity: 0; transform: translateY(14px); } }
+@keyframes aparecer { from { opacity: 0; transform: translateY(10px) scale(.985); } }
+@keyframes desvanecer { to { opacity: 0; } }
+@keyframes bajar-modal { to { opacity: 0; transform: translateY(12px) scale(.98); } }
+@keyframes latido { 0% { transform: scale(1); } 35% { transform: scale(1.35); } 60% { transform: scale(.9); } 100% { transform: scale(1); } }
+@keyframes girar { to { transform: rotate(360deg); } }
+
+/* Transición entre secciones (View Transitions API: Chrome, Edge, Safari 18) */
+#vista { view-transition-name: vista; }
+::view-transition-old(root), ::view-transition-new(root) { animation: none; }
+::view-transition-old(vista) { animation: .16s ease-in both desvanecer; }
+::view-transition-new(vista) { animation: .32s var(--ease) both subir; }
+/* Respaldo para navegadores sin View Transitions */
+#vista.entrando { animation: subir .32s var(--ease) both; }
+
+/* Listas que aparecen en cascada al entrar a una sección */
+.escalonado [style*="--i"] { animation: aparecer .42s var(--ease) both; animation-delay: calc(var(--i) * 38ms); }
+
+/* Respuesta al pasar el mouse y al presionar */
+.btn, .chip, .tab, .quick, .news-card, .news-hero, .res, .proc, .dept, .person, .trip, .book, .loan, .charge, .contact-card,
+.action-row, .react-btn, .modbar a, .mainnav a, .user-btn, .icon-btn, .seg button, .list-item, .notif, .campus {
+  transition: transform .22s var(--ease), box-shadow .25s var(--ease), background-color .2s, color .2s, border-color .2s;
+}
+.btn:active:not(:disabled), .chip:active, .tab:active, .modbar a:active, .mainnav a:active, .seg button:active,
+.react-btn:active, .icon-btn:active, .user-btn:active, .action-row:active { transform: scale(.96); }
+@media (hover: hover) {
+  .quick:hover, .news-card:hover, .res:hover, .proc:hover, .dept:hover, .trip:hover, .book:hover, .person:hover, .contact-card:hover {
+    transform: translateY(-3px); box-shadow: 0 14px 30px rgba(27,31,46,.09); border-color: #ddd6ca;
+  }
+  .quick:hover .ico { transform: scale(1.08) rotate(-4deg); }
+  .btn-primary:hover:not(:disabled) { box-shadow: 0 8px 20px rgba(232,120,28,.28); }
+  .list-item:hover { background: var(--sand); border-radius: 12px; }
+  .campus:hover img { transform: scale(1.03); }
+}
+.quick .ico { transition: transform .3s var(--resorte); }
+.campus img { transition: transform 1.2s var(--ease); }
+.quick:active, .news-card:active, .res:active, .person:active { transform: scale(.98); }
+.list-item { margin-inline: -8px; padding-inline: 8px; }
+
+/* Botón ocupado (cargando) */
+.btn.cargando { color: transparent !important; position: relative; }
+.btn.cargando::after {
+  content: ""; position: absolute; width: 20px; height: 20px; border-radius: 50%;
+  border: 2.5px solid rgba(255,255,255,.45); border-top-color: #fff; animation: girar .7s linear infinite;
+}
+
+/* "Me gusta" con latido */
+.react-btn.pop .i { animation: latido .45s var(--resorte); }
+
+/* Encabezado: sombra al hacer scroll y la barra de módulos se esconde al bajar */
+.topbar { transition: box-shadow .25s; }
+.con-scroll .topbar { box-shadow: 0 6px 24px rgba(0,0,0,.18); }
+.modbar { transition: transform .35s var(--ease), box-shadow .25s; }
+.ocultar-modbar .modbar { transform: translateY(calc(-100% - 2px)); box-shadow: none; }
+
+/* Menú de usuario */
+.dropdown:not([hidden]) { animation: aparecer .2s var(--ease); transform-origin: top right; }
+
+/* Ventanas: entrada con rebote suave y salida animada */
+.overlay { animation: fade .2s ease-out; backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
+.modal { animation: aparecer .32s var(--resorte); }
+.overlay.cerrando { animation: desvanecer .18s ease-in forwards; }
+.overlay.cerrando .modal { animation: bajar-modal .18s ease-in forwards; }
+
+/* En celular, las ventanas suben desde abajo (bottom sheet) */
+@media (max-width: 640px) {
+  .overlay { place-items: end center; padding: 0; }
+  .modal, .modal.wide { width: 100%; max-height: 88vh; border-radius: 24px 24px 0 0; animation: hoja .38s var(--ease); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .modal::before { content: ""; display: block; width: 40px; height: 5px; border-radius: 9px; background: var(--line); margin: 10px auto 0; }
+  .overlay.cerrando .modal { animation: hoja-sale .2s ease-in forwards; }
+}
+@keyframes hoja { from { transform: translateY(100%); } }
+@keyframes hoja-sale { to { transform: translateY(100%); } }
+
+/* Avisos (toast) */
+.toast { animation: aparecer .3s var(--resorte); align-items: center; }
+.toast.saliendo { animation: bajar-modal .2s ease-in forwards; }
+
+/* Desplazamiento suave y chips con scroll horizontal fluido */
+html { scroll-behavior: smooth; }
+.modbar .wrap { scroll-snap-type: x proximity; }
+.modbar a { scroll-snap-align: start; }
+
+/* Respeta "reducir movimiento" del sistema */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  ::view-transition-old(vista), ::view-transition-new(vista) { animation: none; }
+}

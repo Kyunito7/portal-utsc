@@ -12,9 +12,10 @@
       lista() {
         const cat = App.CATALOGO, q = norm(local.q);
         if (local.tab === "alumnos") {
-          const l = cat.alumnos.filter(a => local.carrera === "Todas" || a[3] === local.carrera).filter(a => !q || norm(a.join(" ")).includes(q));
+          const u = App.state.usuario, yo = [U.nombreCompleto(), u.matricula, u.grupo, u.carrera, u.semestre];
+          const l = [yo, ...cat.alumnos.filter(x => x[1] !== u.matricula)].filter(a => local.carrera === "Todas" || a[3] === local.carrera).filter(a => !q || norm(a.join(" ")).includes(q));
           return l.length ? l.map(([n, m, g, c, s]) => `<div class="card person"><span class="avatar avatar-lg" style="width:48px;height:48px;font-size:15px">${U.iniciales(n)}</span>
-            <div class="grow"><b>${U.esc(n)}</b><span class="mono small muted">${m} · ${g}</span><div class="small" style="color:var(--teal);font-weight:600">${c} · Semestre ${s}</div></div></div>`).join("") : vacio();
+            <div class="grow"><b>${U.esc(n)}</b><span class="mono small muted">${m} · ${g}</span><div class="small" style="color:var(--teal);font-weight:600">${c} · ${s}° cuatri</div></div></div>`).join("") : vacio();
         }
         if (local.tab === "docentes") {
           const l = cat.docentes.filter(d => !q || norm(Object.values(d).join(" ")).includes(q));

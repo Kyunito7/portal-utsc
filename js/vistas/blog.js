@@ -92,7 +92,16 @@
     acciones: {
       cat(el) { local.cat = el.dataset.cat; App.render(); },
       tag(el) { local.q = "#" + el.dataset.tag; local.cat = "Todos"; App.render(); window.scrollTo(0, 0); },
-      like(el) { const p = App.state.posts.find(x => x.id === el.dataset.id); p.liked = !p.liked; p.likes += p.liked ? 1 : -1; App.guardar(); App.refrescar("lista"); },
+      like(el) {
+        const p = App.state.posts.find(x => x.id === el.dataset.id);
+        p.liked = !p.liked; p.likes += p.liked ? 1 : -1;
+        App.guardar(); App.refrescar("lista");
+        if (p.liked) {
+          const b = document.querySelector(`[data-a="like"][data-id="${p.id}"]`);
+          if (b) b.classList.add("pop");
+          if (navigator.vibrate) navigator.vibrate(12);   // vibración corta en celular
+        }
+      },
       comentarios(el) { local.abiertos[el.dataset.id] = !local.abiertos[el.dataset.id]; App.refrescar("lista"); },
       quitarImg() { local.imagen = null; App.render(); },
       cancelar() { local.imagen = null; App.render(); },

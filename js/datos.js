@@ -51,7 +51,7 @@ window.App = window.App || {};
 
     categoriasBlog: ["Académico", "Vida universitaria", "Recursos", "Eventos", "Deportes", "Tecnología"],
 
-    // Kárdex: semestres cursados. La calificación null = materia en curso.
+    // Kárdex: cuatrimestres cursados. La calificación null = materia en curso.
     kardex: [
       { num: 1, periodo: "Ene-Jun 2025", materias: [
         ["Fundamentos de Programación", 5, 10], ["Cálculo Diferencial", 5, 9], ["Arquitectura de Computadoras", 4, 9],
@@ -116,7 +116,7 @@ window.App = window.App || {};
           "Los alumnos que asistan recibirán constancia de 2 horas de formación complementaria."] },
       { id: "n7", cat: "Institucional", fecha: "2026-09-05", min: 1, ico: "landmark", grad: ["#e8781c", "#8a3f08"],
         titulo: "Calendario de reinscripciones para el periodo Ene-Jun 2027",
-        resumen: "Servicios Escolares publicó las fechas de reinscripción por carrera y semestre.",
+        resumen: "Servicios Escolares publicó las fechas de reinscripción por carrera y cuatrimestre.",
         cuerpo: ["La reinscripción se realizará del 1 al 12 de diciembre a través del módulo de Pagos del portal.",
           "Recuerda no tener adeudos de biblioteca ni de caja para poder reinscribirte."] }
     ],
@@ -129,7 +129,6 @@ window.App = window.App || {};
     ],
 
     alumnos: [
-      ["Juan Manuel Flores Fernández", "27254", "DSM04AV", "DSM", 4],
       ["Elisa Berenice Ovalle Sánchez", "27239", "DSM04AV", "DSM", 4],
       ["Juan Francisco Sánchez Pérez", "26790", "DSM04AV", "DSM", 4],
       ["José Antonio Prado Segura", "27144", "DSM04AV", "DSM", 4],
@@ -172,7 +171,7 @@ window.App = window.App || {};
     tramites: [
       { id: "constancia", nombre: "Constancia de estudios", ico: "file-text", desc: "Documento oficial que acredita tu inscripción actual en la UTSC.", tiempo: "24-48 hrs hábiles", costo: 0, pideDestino: true },
       { id: "carta", nombre: "Carta de presentación", ico: "clipboard-list", desc: "Carta institucional para prácticas profesionales, servicio social o vinculación.", tiempo: "2-3 días hábiles", costo: 0, pideDestino: true },
-      { id: "calificaciones", nombre: "Constancia de calificaciones", ico: "graduation-cap", desc: "Historial académico oficial con calificaciones por semestre.", tiempo: "24 hrs hábiles", costo: 0 },
+      { id: "calificaciones", nombre: "Constancia de calificaciones", ico: "graduation-cap", desc: "Historial académico oficial con calificaciones por cuatrimestre.", tiempo: "24 hrs hábiles", costo: 0 },
       { id: "kardex", nombre: "Kárdex certificado", ico: "circle-check", desc: "Kárdex con firma y sello de Servicios Escolares para trámites externos.", tiempo: "3-5 días hábiles", costo: 150 },
       { id: "credencial", nombre: "Reposición de credencial", ico: "refresh-cw", desc: "Nueva credencial institucional por pérdida o daño.", tiempo: "5 días hábiles", costo: 200 },
       { id: "baja", nombre: "Baja temporal", ico: "circle-pause", desc: "Suspende tus estudios por uno o dos cuatrimestres sin perder tu matrícula.", tiempo: "5-7 días hábiles", costo: 0 }
@@ -191,54 +190,41 @@ window.App = window.App || {};
     coloresLibro: { "Programación": "#3b82f6", "IA": "#8b5cf6", "Redes": "#10b981", "Bases de Datos": "#ef4444", "Ingeniería": "#f59e0b", "Matemáticas": "#0ea5e9", "Seguridad": "#1b1f2e" }
   };
 
-  App.crearEstadoInicial = function () {
+  // Crea los datos de ejemplo para una cuenta nueva.
+  // "usuario" es el perfil que la persona llenó al registrarse (sin contraseña).
+  App.crearEstadoInicial = function (usuario) {
     const ahora = Date.now();
+    const sem = usuario.semestre;
     return {
-      version: 2,
-      usuario: {
-        nombre: "Juan Manuel",
-        apellidos: "Flores Fernández",
-        matricula: "27254",
-        grupo: "DSM04AV",
-        carrera: "DSM",
-        semestre: 4,
-        correo: "27254@utsc.edu.mx",
-        telefono: "81-1234-5678",
-        bio: "Alumno de DSM. Me interesa el desarrollo móvil y la IA.",
-        rol: "Alumno",
-        password: "utsc2026"
-      },
-      cuentasExtra: [],
+      version: 3,
+      usuario: Object.assign({ telefono: "", bio: "", rol: "Alumno" }, usuario),
       ajustes: {
         notifBlog: true, notifComentarios: true, notifModeracion: true, notifInstitucional: true,
         visibilidad: "Toda la comunidad", mostrarCarrera: true, mostrarMatricula: false
       },
       actividad: [
-        { t: ahora - 2 * HORA, txt: "Publicaste «Resumen del parcial de Redes Neuronales» en el blog" },
-        { t: ahora - 3 * DIA, txt: "Solicitaste una Constancia de calificaciones" },
-        { t: ahora - 5 * DIA, txt: "Iniciaste sesión desde un navegador nuevo" }
+        { t: ahora, txt: "Creaste tu cuenta en el portal" }
       ],
       notificaciones: [
+        { id: "a0", mod: "Bienvenida", txt: "¡Bienvenido(a) al portal, " + usuario.nombre.split(" ")[0] + "! Explora el blog estudiantil y tus módulos.", t: ahora, leida: false, ir: "blog" },
         { id: "a1", mod: "Trámites", txt: "Tu constancia de estudios (TRM-2026-1847) está lista para descarga.", t: ahora - 10 * 60 * 1000, leida: false, ir: "tramites" },
-        { id: "a2", mod: "Blog", txt: "Elisa Berenice comentó tu publicación sobre Redes Neuronales.", t: ahora - 2 * HORA, leida: false, ir: "blog" },
-        { id: "a3", mod: "Pagos", txt: "Tienes un pago pendiente: Reinscripción 4° Semestre, vence el 30 Oct.", t: ahora - DIA, leida: false, ir: "pagos" },
-        { id: "a4", mod: "Noticias", txt: "Nueva noticia: UTSC firma convenio con el Tec de Monterrey.", t: ahora - 2 * DIA, leida: true, ir: "noticias" },
-        { id: "a5", mod: "Blog", txt: "Tu publicación recibió 34 reacciones esta semana.", t: ahora - 3 * DIA, leida: true, ir: "blog" }
+        { id: "a3", mod: "Pagos", txt: "Tienes un pago pendiente: Reinscripción " + sem + "° Cuatrimestre, vence el 30 Oct.", t: ahora - DIA, leida: false, ir: "pagos" },
+        { id: "a4", mod: "Noticias", txt: "Nueva noticia: UTSC firma convenio con el Tec de Monterrey.", t: ahora - 2 * DIA, leida: true, ir: "noticias" }
       ],
       posts: [
-        { id: "p1", autor: "Juan Manuel Flores Fernández", matricula: "27254", propio: true, cat: "Académico", t: ahora - 2 * HORA,
+        { id: "p1", autor: "José Antonio Prado Segura", matricula: "27144", cat: "Académico", t: ahora - 2 * HORA,
           titulo: "Resumen del parcial de Redes Neuronales",
           texto: "Comparto mis apuntes del tercer parcial. Cubrimos backpropagation, funciones de activación y optimización con Adam. Si alguien quiere el PDF me escribe. Mucho ánimo para el examen del viernes. #RedesNeuronales #ExamenFinal",
           portada: { ico: "brain", grad: ["#2a3050", "#8b5cf6"] }, likes: 34, liked: false, reportado: false,
           comentarios: [
             { autor: "Elisa Berenice Ovalle Sánchez", txt: "¡Gracias! Me sirvió mucho la parte de Adam.", t: ahora - 90 * 60 * 1000 },
-            { autor: "José Antonio Prado Segura", txt: "¿Incluye los ejercicios de la tarea 3?", t: ahora - 60 * 60 * 1000 }
+            { autor: "Paola Alejandra Vega Núñez", txt: "¿Incluye los ejercicios de la tarea 3?", t: ahora - 60 * 60 * 1000 }
           ] },
         { id: "p2", autor: "Elisa Berenice Ovalle Sánchez", matricula: "27239", cat: "Vida universitaria", t: ahora - 5 * HORA,
           titulo: "Ganamos el hackathon inter-universitario HackNL 2026",
           texto: "Nuestro equipo de DSM04AV ganó el primer lugar con una app para reportar baches en Santa Catarina. Gracias a todos los que nos apoyaron. #HackNL2026 #UTSC2026",
           portada: { ico: "trophy", grad: ["#e8781c", "#1b1f2e"] }, likes: 58, liked: false, reportado: false,
-          comentarios: [{ autor: "Juan Manuel Flores Fernández", txt: "¡Felicidades, equipo!", t: ahora - 4 * HORA }] },
+          comentarios: [{ autor: "Juan Francisco Sánchez Pérez", txt: "¡Felicidades, equipo!", t: ahora - 4 * HORA }] },
         { id: "p3", autor: "Juan Francisco Sánchez Pérez", matricula: "26790", cat: "Recursos", t: ahora - 26 * HORA,
           titulo: "Repositorio de ejercicios de Bases de Datos: 40 ejercicios SQL",
           texto: "Armé una lista de 40 ejercicios de SQL con soluciones, desde SELECT básicos hasta subconsultas y JOINs. Ideal para repasar antes del examen. #ExamenFinal",
@@ -249,17 +235,16 @@ window.App = window.App || {};
           portada: null, likes: 12, liked: false, reportado: false, comentarios: [] }
       ],
       cargos: [
-        { id: "c1", concepto: "Reinscripción 4° Semestre", monto: 1800, vence: "2026-10-30" },
+        { id: "c1", concepto: "Reinscripción " + sem + "° Cuatrimestre", monto: 1800, vence: "2026-10-30" },
         { id: "c2", concepto: "Seguro escolar 2026-B", monto: 450, vence: "2026-11-15" },
         { id: "c3", concepto: "Credencial institucional", monto: 200, vence: "2026-10-31" }
       ],
-      historialPagos: [
-        { concepto: "Seguro escolar 2026-A", fecha: "2026-01-12", monto: 450, ref: "REF-2026-001821" },
-        { concepto: "Reinscripción 3° Semestre", fecha: "2026-01-12", monto: 1800, ref: "REF-2026-001547" },
-        { concepto: "Seguro escolar 2025-B", fecha: "2025-08-11", monto: 450, ref: "REF-2025-004102" },
-        { concepto: "Reinscripción 2° Semestre", fecha: "2025-08-11", monto: 1800, ref: "REF-2025-004821" },
-        { concepto: "Inscripción 1° Semestre", fecha: "2025-01-10", monto: 1800, ref: "REF-2025-000341" }
-      ],
+      // Pagos de cuatrimestres anteriores (solo los que ya cursó).
+      historialPagos: Array.from({ length: Math.min(sem - 1, 4) }, (_, k) => {
+        const n = sem - 1 - k, f = new Date(2026, 8 - 4 * (k + 1), 10);
+        const fecha = f.getFullYear() + "-" + String(f.getMonth() + 1).padStart(2, "0") + "-10";
+        return { concepto: (n === 1 ? "Inscripción " : "Reinscripción ") + n + "° Cuatrimestre", fecha, monto: 1800, ref: "REF-" + f.getFullYear() + "-00" + (1500 + n * 37) };
+      }),
       solicitudes: [
         { folio: "TRM-2026-1985", tramite: "calificaciones", fecha: "2026-09-17", estado: 0, nota: "Tu solicitud fue recibida y está en cola de procesamiento." },
         { folio: "TRM-2026-1923", tramite: "carta", fecha: "2026-09-15", estado: 1, nota: "En revisión por la coordinación académica.", destino: "Grupo Industrial Monterrey" },

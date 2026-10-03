@@ -31,14 +31,14 @@
             <div class="stats">
               <div class="stat"><b class="c-orange">${ac.promedio.toFixed(1)}</b><small>Promedio</small></div>
               <div class="stat"><b class="c-teal">${ac.creditos}</b><small>Créditos</small></div>
-              <div class="stat"><b>${ac.semestre}°</b><small>Semestre</small></div>
+              <div class="stat"><b>${ac.semestre}°</b><small>Cuatrimestre</small></div>
             </div>
           </section>
           <section><h2 class="section-title">Acceso rápido</h2>
             <div class="quick-grid">${cat.modulos.map(m => `<a class="quick" href="#${m.id}"><span class="ico" aria-hidden="true">${I(m.ico)}</span><b>${m.nombre}</b><small>${m.desc}</small></a>`).join("")}</div>
           </section>
           <section class="campus">
-            <img src="img/campus-aereo.jpg" alt="Vista aérea del campus de la UTSC" loading="lazy">
+            <img src="img/campus-aereo.jpg" alt="Vista aérea del campus de la UTSC" loading="lazy" width="1704" height="632">
             <div class="content"><span class="pill-live" style="justify-self:start">Nuestro campus</span>
               <h2>${cat.universidad.nombre}</h2>
               <p>${cat.universidad.direccion}. Al pie de la Sierra Madre, en ${cat.universidad.ciudad}.</p></div>

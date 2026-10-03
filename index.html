@@ -14,8 +14,9 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Portal UTSC">
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=JetBrains+Mono:wght@400;700&family=Outfit:wght@400;500;600;700&display=swap">
+  <!-- Fuentes guardadas en /fonts: se ven igual aunque no haya internet -->
+  <link rel="preload" href="fonts/outfit.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/fraunces.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/app.css">
   <!-- Si no hay sesión, se oculta el shell desde el inicio para que no "parpadee" -->
   <script>try { if (localStorage.getItem("utsc-portal-sesion") !== "1") document.documentElement.classList.add("sin-sesion"); } catch (e) { document.documentElement.classList.add("sin-sesion"); }</script>
@@ -23,6 +24,7 @@
   <!-- Scripts al final de la carga (defer) para que el shell se pinte de inmediato -->
   <script defer src="js/iconos.js"></script>
   <script defer src="js/datos.js"></script>
+  <script defer src="js/cuentas.js"></script>
   <script defer src="js/nucleo.js"></script>
   <script defer src="js/menu-usuario.js"></script>
   <script defer src="js/vistas/inicio.js"></script>
@@ -65,6 +67,7 @@
 <symbol id="i-credit-card" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="5" rx="2" /><line x1="2" x2="22" y1="10" y2="10" /><path d="M6 14h2" /></symbol>
 <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 15V3" /><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><path d="m7 10 5 5 5-5" /></symbol>
 <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" /><circle cx="12" cy="12" r="3" /></symbol>
+<symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49" /><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242" /><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143" /><path d="m2 2 20 20" /></symbol>
 <symbol id="i-factory" viewBox="0 0 24 24"><path d="M12 16h.01" /><path d="M16 16h.01" /><path d="M3 19a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5a.5.5 0 0 0-.769-.422l-4.462 2.844A.5.5 0 0 1 15 10.5v-2a.5.5 0 0 0-.769-.422L9.77 10.922A.5.5 0 0 1 9 10.5V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2z" /><path d="M8 16h.01" /></symbol>
 <symbol id="i-file-text" viewBox="0 0 24 24"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" /><path d="M14 2v5a1 1 0 0 0 1 1h5" /><path d="M10 9H8" /><path d="M16 13H8" /><path d="M16 17H8" /></symbol>
 <symbol id="i-flag" viewBox="0 0 24 24"><path d="M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10a1 1 0 0 1-.4.8A6 6 0 0 1 16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528" /></symbol>
@@ -146,8 +149,7 @@
         <button data-a="config"><svg class="i" aria-hidden="true"><use href="#i-settings"></use></svg> Configuración</button>
         <button data-a="privacidad"><svg class="i" aria-hidden="true"><use href="#i-lock"></use></svg> Privacidad</button>
         <hr>
-        <div id="dd-cuentas"></div>
-        <button data-a="agregarCuenta"><svg class="i" aria-hidden="true"><use href="#i-plus"></use></svg> Agregar otra cuenta</button>
+        <button data-a="cambiarCuenta"><svg class="i" aria-hidden="true"><use href="#i-repeat"></use></svg> Cambiar de cuenta</button>
         <button data-a="salir" class="danger"><svg class="i" aria-hidden="true"><use href="#i-log-out"></use></svg> Cerrar sesión</button>
       </nav>
     </div>
@@ -179,7 +181,7 @@
     <div class="footer-grid">
       <div><div class="footer-brand"><img src="img/logo-utsc.png" alt="" width="40" height="31"><b>UTSC</b></div>
         <p>Universidad Tecnológica de Santa Catarina. Ingeniería en Desarrollo de Software Multiplataforma.</p>
-        <p class="mono small" style="margin-top:12px">Grupo <span data-shell="grupo">DSM04AV</span> · v1.2 · Oct 2026</p></div>
+        <p class="mono small" style="margin-top:12px">Grupo <span data-shell="grupo">DSM04AV</span> · v1.3 · Oct 2026</p></div>
       <div><h4>Módulos</h4>
         <a href="#blog"><svg class="i" aria-hidden="true"><use href="#i-notebook-pen"></use></svg> Blog Estudiantil</a>
         <a href="#kardex"><svg class="i" aria-hidden="true"><use href="#i-clipboard-list"></use></svg> Kárdex</a>

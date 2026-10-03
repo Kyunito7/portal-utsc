@@ -1,9 +1,9 @@
 /* Núcleo: guardado de datos, utilidades, ventanas modales y avisos. */
 (function () {
-  const CLAVE = "utsc-portal-v2";
-  const CLAVE_SESION = "utsc-portal-sesion";
+  const CLAVE_SESION = "utsc-portal-sesion";      // guarda el correo de quien inició sesión
+  const claveDatos = correo => "utsc-portal-v3:" + correo; // datos de cada cuenta por separado
 
-  // ---------- Guardado (localStorage con respaldo en memoria) ----------
+  // ---------- Guardado (localStorage) ----------
   function leer(clave) {
     try { return localStorage.getItem(clave); } catch (e) { return null; }
   }
@@ -15,25 +15,46 @@
     } catch (e) { return false; }
   }
 
-  App.cargar = function () {
+  // Carga la sesión guardada (si la hay) y los datos de esa cuenta.
+  App.cargar = async function () {
+    App.state = null;
+    App.sesion = false;
+    const correo = leer(CLAVE_SESION);
+    if (!correo) return;
+    const perfil = await App.cuentas.obtener(correo);
+    if (!perfil) { escribir(CLAVE_SESION, null); return; }
+    App.abrirDatos(perfil);
+    App.sesion = true;
+  };
+  // Lee los datos de una cuenta; si es nueva, crea sus datos de ejemplo.
+  App.abrirDatos = function (perfil) {
     let estado = null;
-    try { estado = JSON.parse(leer(CLAVE) || "null"); } catch (e) { estado = null; }
-    if (!estado || estado.version !== 2) estado = App.crearEstadoInicial();
+    try { estado = JSON.parse(leer(claveDatos(perfil.correo)) || "null"); } catch (e) { estado = null; }
+    if (!estado || estado.version !== 3) estado = App.crearEstadoInicial(perfil);
+    Object.assign(estado.usuario, perfil); // el perfil de la cuenta manda
     App.state = estado;
-    App.sesion = leer(CLAVE_SESION) === "1";
+    App.guardar();
   };
   App.guardar = function () {
-    if (!escribir(CLAVE, JSON.stringify(App.state))) {
+    if (!App.state) return;
+    const clave = claveDatos(App.state.usuario.correo);
+    if (!escribir(clave, JSON.stringify(App.state))) {
       // Si la imagen de una publicación llena el almacenamiento, se guarda sin imágenes.
       const copia = JSON.parse(JSON.stringify(App.state));
       copia.posts.forEach(p => { if (p.imagen) p.imagen = null; });
-      escribir(CLAVE, JSON.stringify(copia));
+      escribir(clave, JSON.stringify(copia));
     }
   };
-  App.iniciarSesion = function () { App.sesion = true; escribir(CLAVE_SESION, "1"); };
+  App.iniciarSesion = function (perfil) {
+    App.abrirDatos(perfil);
+    App.sesion = true;
+    escribir(CLAVE_SESION, perfil.correo);
+  };
   App.cerrarSesion = function () { App.sesion = false; escribir(CLAVE_SESION, null); };
+  App.borrarDatos = function (correo) { escribir(claveDatos(correo), null); };
   App.restablecer = function () {
-    App.state = App.crearEstadoInicial();
+    const perfil = App.state.usuario;
+    App.state = App.crearEstadoInicial(perfil);
     App.guardar();
   };
   App.registrar = function (txt) {
@@ -120,8 +141,26 @@
   };
 
   // ---------- Kárdex: cálculos compartidos por Inicio, Perfil y Kárdex ----------
+  // Kárdex de ejemplo según el cuatrimestre de la cuenta: los anteriores con calificación
+  // y el actual "en curso". Las materias salen del catálogo (se repiten si hay más de 4).
+  App.kardex = function () {
+    const base = App.CATALOGO.kardex, actual = Math.max(1, Number(App.state.usuario.semestre) || 1);
+    const CICLOS = ["Ene-Abr", "May-Ago", "Sep-Dic"], ROMANOS = ["", " II", " III"];
+    const lista = [];
+    for (let n = 1; n <= actual; n++) {
+      const b = base[(n - 1) % base.length], vuelta = Math.floor((n - 1) / base.length);
+      let ciclo = 2 - (actual - n), anio = 2026;          // el cuatrimestre actual es Sep-Dic 2026
+      while (ciclo < 0) { ciclo += 3; anio--; }
+      lista.push({
+        num: n, actual: n === actual, periodo: CICLOS[ciclo] + " " + anio,
+        materias: b.materias.map(([m, c, cal], i) => [m + (ROMANOS[vuelta] || ""), c,
+          n === actual ? null : (cal != null ? cal : base[0].materias[i][2])])
+      });
+    }
+    return lista;
+  };
   App.academico = function () {
-    const sems = App.CATALOGO.kardex;
+    const sems = App.kardex();
     let suma = 0, cred = 0;
     sems.forEach(s => s.materias.forEach(([, c, cal]) => { if (cal != null && cal >= 7) { suma += cal * c; cred += c; } }));
     const total = App.CATALOGO.universidad.creditosCarrera;
@@ -129,10 +168,11 @@
       promedio: cred ? (suma / cred) : 0,
       creditos: cred,
       total,
-      avance: Math.round(cred / total * 100),
+      avance: Math.min(100, Math.round(cred / total * 100)),
       semestre: App.state.usuario.semestre
     };
   };
+
 
   // ---------- Avisos breves ----------
   App.toast = function (msg, tipo) {
@@ -142,14 +182,14 @@
     t.className = "toast" + (tipo === "error" ? " error" : "");
     t.textContent = msg;
     cont.appendChild(t);
-    setTimeout(() => t.remove(), 3200);
+    setTimeout(() => { t.classList.add("saliendo"); setTimeout(() => t.remove(), 220); }, 3000);
   };
 
   // ---------- Ventanas modales ----------
   // contenido: HTML. acciones: { nombre: fn(el, evento, modal) } para elementos con data-m="nombre".
   App.modal = function (contenido, opciones) {
     opciones = opciones || {};
-    App.cerrarModal();
+    App.cerrarModal(true);
     const ov = document.createElement("div");
     ov.className = "overlay";
     ov.innerHTML = `<div class="modal ${opciones.ancho ? "wide" : ""}" role="dialog" aria-modal="true">${contenido}</div>`;
@@ -176,8 +216,16 @@
     App._modalAbierto = ov;
     return modal;
   };
-  App.cerrarModal = function () {
-    if (App._modalAbierto) { App._modalAbierto.remove(); App._modalAbierto = null; document.body.style.overflow = ""; }
+  // Cierra la ventana con una animación corta (o de inmediato si se abre otra encima).
+  App.cerrarModal = function (inmediato) {
+    const ov = App._modalAbierto;
+    if (!ov) return;
+    App._modalAbierto = null;
+    document.body.style.overflow = "";
+    const reducir = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (inmediato || reducir) { ov.remove(); return; }
+    ov.classList.add("cerrando");
+    setTimeout(() => ov.remove(), 190);
   };
   App.exito = function (ico, titulo, texto, boton, alPulsar) {
     App.modal(`<div class="success"><div class="big" aria-hidden="true">${ico}</div><h2>${U.esc(titulo)}</h2><p>${texto}</p>

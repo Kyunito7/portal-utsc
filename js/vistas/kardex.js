@@ -1,4 +1,4 @@
-/* Kárdex: avance curricular y materias por semestre. */
+/* Kárdex: avance curricular y materias por cuatrimestre. */
 (function () {
   const U = App.util;
   const local = { sem: null };
@@ -12,7 +12,7 @@
   App.views.kardex = {
     titulo: "Kárdex", migas: "Kárdex",
     render() {
-      const u = App.state.usuario, ac = App.academico(), sems = App.CATALOGO.kardex;
+      const u = App.state.usuario, ac = App.academico(), sems = App.kardex();
       const actual = sems.find(s => s.actual) || sems[sems.length - 1];
       const sel = sems.find(s => s.num === local.sem) || actual;
       const credSem = sel.materias.reduce((a, m) => a + m[1], 0);
@@ -32,9 +32,9 @@
           <div class="progress" role="progressbar" aria-valuenow="${ac.avance}" aria-valuemin="0" aria-valuemax="100"><div style="width:${ac.avance}%"></div></div>
           <div class="row-between small muted"><span>0 créditos</span><span>${ac.creditos} aprobados</span><span>${ac.total} créditos</span></div>
         </section>
-        <div class="tabs">${sems.map(s => `<button class="tab sem-tab ${s === sel ? "active" : ""}" data-a="sem" data-n="${s.num}">${s.num}° Sem <small>· ${s.periodo.split(" ")[0]}</small></button>`).join("")}</div>
+        <div class="tabs">${sems.map(s => `<button class="tab sem-tab ${s === sel ? "active" : ""}" data-a="sem" data-n="${s.num}">${s.num}° Cuatri <small>· ${s.periodo.split(" ")[0]}</small></button>`).join("")}</div>
         <section class="card" style="overflow:hidden">
-          <div class="card-pad row-between" style="padding-bottom:16px"><div><h2 style="font-size:20px">${sel.num}° Semestre</h2><span class="mono small muted">${sel.periodo}${sel.actual ? " (actual)" : ""}</span></div>
+          <div class="card-pad row-between" style="padding-bottom:16px"><div><h2 style="font-size:20px">${sel.num}° Cuatrimestre</h2><span class="mono small muted">${sel.periodo}${sel.actual ? " (actual)" : ""}</span></div>
             ${promSem != null ? `<span class="badge b-teal">Promedio del semestre: ${promSem.toFixed(1)}</span>` : ""}</div>
           <div class="table-wrap"><table>
             <thead><tr><th>Materia</th><th class="t-center">Créditos</th><th class="t-center">Calificación</th><th class="t-center">Estado</th></tr></thead>

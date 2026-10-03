@@ -107,13 +107,13 @@
           <div class="stack" style="gap:8px"><div class="row-between small" style="color:#a9aec2"><span>Pagos completados</span><span>${t.hechos} de ${t.total}</span></div>
             <div class="progress dark teal"><div style="width:${t.total ? t.hechos / t.total * 100 : 100}%"></div></div></div>
         </section>
-        <section class="stack" style="gap:14px"><h2 class="section-title" style="margin:0">Cargos del semestre actual</h2>
+        <section class="stack" style="gap:14px"><h2 class="section-title" style="margin:0">Cargos del cuatrimestre actual</h2>
           ${cargos.length ? cargos.map(c => `<div class="card charge"><span class="ico" aria-hidden="true">${I("credit-card")}</span>
             <div class="grow"><b style="display:block">${U.esc(c.concepto)}</b>
               <span class="mono small ${c.vence < hoy ? "" : "muted"}" style="${c.vence < hoy ? "color:var(--red)" : ""}">${c.vence < hoy ? "Venció" : "Vence"}: ${U.fecha(c.vence)}</span>
               ${c.referencia ? `<div class="small" style="color:var(--teal)">Referencia ${c.referencia} · ${c.metodo}</div>` : ""}</div>
             <span class="price">${U.dinero(c.monto)}</span><button class="btn btn-primary" data-a="pagar" data-id="${c.id}">${c.referencia ? "Pagar con tarjeta" : "Pagar"}</button></div>`).join("")
-            : `<div class="card empty"><div class="big">${I("party-popper")}</div><b>Estás al corriente.</b><span>No tienes cargos pendientes este semestre.</span></div>`}
+            : `<div class="card empty"><div class="big">${I("party-popper")}</div><b>Estás al corriente.</b><span>No tienes cargos pendientes este cuatrimestre.</span></div>`}
         </section>
         <section><h2 class="section-title">Historial completo de pagos</h2>
           <div class="card table-wrap"><table>
