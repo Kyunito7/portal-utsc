@@ -1,0 +1,23 @@
+{
+  "name": "Portal Universitario UTSC",
+  "short_name": "Portal UTSC",
+  "description": "Blog, kárdex, horarios, pagos, trámites, biblioteca y DriverUTSC de la Universidad Tecnológica de Santa Catarina.",
+  "lang": "es-MX",
+  "start_url": "./index.html#inicio",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f5f2ec",
+  "theme_color": "#1b1f2e",
+  "categories": ["education"],
+  "icons": [
+    { "src": "img/iconos/icono-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "img/iconos/icono-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "img/iconos/icono-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Blog Estudiantil", "url": "./index.html#blog", "icons": [{ "src": "img/iconos/icono-192.png", "sizes": "192x192" }] },
+    { "name": "Mi horario", "url": "./index.html#horarios", "icons": [{ "src": "img/iconos/icono-192.png", "sizes": "192x192" }] },
+    { "name": "Pagos", "url": "./index.html#pagos", "icons": [{ "src": "img/iconos/icono-192.png", "sizes": "192x192" }] }
+  ]
+}

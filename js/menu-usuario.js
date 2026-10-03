@@ -1,0 +1,196 @@
+/* Menú del usuario: avisos, perfil, configuración, privacidad y cuentas. */
+(function () {
+  const U = App.util;
+  const M = App.menu = {};
+
+  M.avisos = function () {
+    const lista = App.state.notificaciones;
+    const pintar = () => `<div class="modal-head row-between"><h2>Avisos y notificaciones</h2>
+        ${lista.some(n => !n.leida) ? `<button class="link" data-m="todas">Marcar todo como leído</button>` : ""}</div>
+      <div>${lista.length ? lista.map(n => `<button class="notif ${n.leida ? "" : "unread"}" style="width:100%;text-align:left;border-right:0;border-top:0" data-m="abrir" data-id="${n.id}">
+          <span>${U.esc(n.txt)}</span><small><b>${n.mod}</b>${U.hace(n.t)}</small></button>`).join("")
+        : `<div class="empty"><div class="big">${I("bell-off")}</div>No tienes avisos.</div>`}</div>
+      <div class="modal-body"><button class="btn btn-dark btn-block" data-m="cerrar">Cerrar</button></div>`;
+    const acciones = {
+      todas: (el, e, modal) => { lista.forEach(n => n.leida = true); App.guardar(); modal.innerHTML = pintar(); App.render(); },
+      abrir: el => {
+        const n = lista.find(x => x.id === el.dataset.id);
+        n.leida = true; App.guardar(); App.cerrarModal();
+        if (n.ir) App.ir(n.ir); else App.render();
+      }
+    };
+    App.modal(pintar(), { acciones });
+  };
+
+  M.perfil = function () {
+    const u = App.state.usuario, ac = App.academico();
+    App.modal(`<div class="profile-head"><span class="avatar avatar-lg">${U.iniciales(U.nombreCompleto())}</span>
+        <h2>${U.esc(U.nombreCompleto())}</h2><small>${u.matricula} · ${u.grupo}</small><small>${u.correo}</small></div>
+      <div class="modal-body">
+        <div class="mini-stats"><div><b>${ac.promedio.toFixed(1)}</b><small>Promedio</small></div><div><b>${ac.creditos}/${ac.total}</b><small>Créditos</small></div><div><b>${ac.semestre}°</b><small>Semestre</small></div></div>
+        <div>
+          <div class="kv"><span>Carrera</span><b>${U.carrera(u.carrera)}</b></div>
+          <div class="kv"><span>Correo</span><b class="mono">${u.correo}</b></div>
+          <div class="kv"><span>Teléfono</span><b class="mono">${U.esc(u.telefono || "Sin registrar")}</b></div>
+          <div class="kv"><span>Sobre mí</span><b>${U.esc(u.bio || "Sin descripción")}</b></div>
+          <div class="kv"><span>Rol</span><b>${u.rol}</b></div>
+        </div>
+        <button class="btn btn-outline btn-block" data-m="editar">${I("pencil")} Editar perfil</button>
+        <button class="btn btn-dark btn-block" data-m="cerrar">Cerrar</button>
+      </div>`, { acciones: { editar: () => M.editarPerfil() } });
+  };
+
+  M.editarPerfil = function () {
+    const u = App.state.usuario;
+    App.modal(`<div class="modal-head"><h2>Editar perfil</h2><p class="small muted">Tu nombre, matrícula y carrera solo los cambia Servicios Escolares.</p></div>
+      <form data-m="guardar" novalidate>
+        <div class="modal-body">
+          <div class="field"><label for="ep-tel">Teléfono</label><input class="input" id="ep-tel" name="tel" inputmode="tel" value="${U.esc(u.telefono)}" placeholder="81-1234-5678"></div>
+          <div class="field"><label for="ep-bio">Sobre mí</label><textarea class="textarea" id="ep-bio" name="bio" maxlength="160">${U.esc(u.bio)}</textarea><small class="muted">Máximo 160 caracteres.</small></div>
+        </div>
+        <div class="modal-foot"><button type="button" class="btn btn-outline" data-m="volver">Cancelar</button><button class="btn btn-primary" type="submit">Guardar cambios</button></div>
+      </form>`, { acciones: {
+        volver: () => M.perfil(),
+        guardar: f => {
+          if (!App.validar(f, { tel: v => v && !/^[\d\s-]{10,14}$/.test(v) ? "Escribe un teléfono de 10 dígitos, por ejemplo 81-1234-5678." : "" })) return;
+          u.telefono = f.tel.value.trim(); u.bio = f.bio.value.trim();
+          App.registrar("Actualizaste tu perfil"); App.guardar();
+          App.toast("Perfil actualizado"); M.perfil();
+        } } });
+  };
+
+  function sw(id, nombre, txt, valor) {
+    return `<div class="setting"><label for="${id}">${txt}</label><span class="switch"><input type="checkbox" id="${id}" name="${nombre}" ${valor ? "checked" : ""}><span></span></span></div>`;
+  }
+
+  M.config = function () {
+    const a = App.state.ajustes, u = App.state.usuario;
+    App.modal(`<div class="modal-head"><h2>Configuración</h2></div>
+      <form data-m="guardar"><div class="modal-body">
+        <div class="section-label">Notificaciones</div>
+        ${sw("cf-1", "notifBlog", "Nuevas publicaciones en el blog", a.notifBlog)}
+        ${sw("cf-2", "notifComentarios", "Comentarios en mis publicaciones", a.notifComentarios)}
+        ${sw("cf-3", "notifModeracion", "Reportes de moderación", a.notifModeracion)}
+        ${sw("cf-4", "notifInstitucional", "Comunicados institucionales", a.notifInstitucional)}
+        <div class="section-label">Cuenta</div>
+        <button type="button" class="action-row" data-m="pass">${I("key-round")} Cambiar contraseña</button>
+        <div class="action-row" style="color:var(--teal);font-weight:600">${I("mail")} ${u.correo} ✓ verificado</div>
+        <button type="button" class="action-row" data-m="reset">${I("rotate-ccw")} Restablecer datos de ejemplo</button>
+        <button class="btn btn-dark btn-block" type="submit">Guardar y cerrar</button>
+      </div></form>`, { acciones: {
+        pass: () => M.cambiarPassword(),
+        reset: () => App.confirmar("Restablecer datos", "Se borrarán tus publicaciones, pagos, trámites y viajes de prueba y se cargarán los datos de ejemplo originales.", "Restablecer", () => {
+          App.restablecer(); App.render(); App.toast("Datos de ejemplo restablecidos");
+        }, true),
+        guardar: f => {
+          ["notifBlog", "notifComentarios", "notifModeracion", "notifInstitucional"].forEach(k => a[k] = f.elements[k].checked);
+          App.guardar(); App.cerrarModal(); App.toast("Configuración guardada");
+        } } });
+  };
+
+  M.cambiarPassword = function () {
+    const u = App.state.usuario;
+    App.modal(`<div class="modal-head"><h2>Cambiar contraseña</h2></div>
+      <form data-m="guardar" novalidate><div class="modal-body">
+        <div class="field"><label for="cp-a">Contraseña actual</label><input class="input" id="cp-a" name="actual" type="password" autocomplete="current-password"></div>
+        <div class="field"><label for="cp-n">Nueva contraseña</label><input class="input" id="cp-n" name="nueva" type="password" autocomplete="new-password"><small class="muted">Mínimo 8 caracteres, con al menos un número.</small></div>
+        <div class="field"><label for="cp-c">Confirmar nueva contraseña</label><input class="input" id="cp-c" name="conf" type="password" autocomplete="new-password"></div>
+      </div><div class="modal-foot"><button type="button" class="btn btn-outline" data-m="volver">Cancelar</button><button class="btn btn-primary">Cambiar contraseña</button></div></form>`,
+      { acciones: {
+        volver: () => M.config(),
+        guardar: f => {
+          const ok = App.validar(f, {
+            actual: v => v !== u.password ? "La contraseña actual no es correcta." : "",
+            nueva: v => v.length < 8 || !/\d/.test(v) ? "Usa al menos 8 caracteres y un número." : v === u.password ? "La nueva contraseña debe ser distinta a la actual." : "",
+            conf: v => v !== f.nueva.value.trim() ? "Las contraseñas no coinciden." : ""
+          });
+          if (!ok) return;
+          u.password = f.nueva.value.trim();
+          App.registrar("Cambiaste tu contraseña"); App.guardar();
+          App.cerrarModal(); App.toast("Contraseña actualizada");
+        } } });
+  };
+
+  M.privacidad = function () {
+    const a = App.state.ajustes;
+    const ops = ["Toda la comunidad", "Solo mi carrera", "Solo mi grupo"];
+    App.modal(`<div class="modal-head"><h2>Privacidad</h2></div>
+      <form data-m="guardar"><div class="modal-body">
+        <div class="section-label">Visibilidad</div>
+        <div class="field"><label for="pv-vis">Quién puede ver mis publicaciones</label>
+          <select class="select" id="pv-vis" name="vis">${ops.map(o => `<option ${o === a.visibilidad ? "selected" : ""}>${o}</option>`).join("")}</select></div>
+        ${sw("pv-1", "carrera", "Mostrar mi carrera en el perfil", a.mostrarCarrera)}
+        ${sw("pv-2", "matricula", "Mostrar mi matrícula en publicaciones", a.mostrarMatricula)}
+        <div class="section-label">Datos personales</div>
+        <button type="button" class="action-row" data-m="hist">${I("clipboard-list")} Ver historial de actividad</button>
+        <button type="button" class="action-row" data-m="desc">${I("download")} Descargar mis datos</button>
+        <button type="button" class="action-row danger" data-m="borrar">${I("trash-2")} Eliminar cuenta</button>
+        <button class="btn btn-dark btn-block" type="submit">Guardar y cerrar</button>
+      </div></form>`, { acciones: {
+        hist: () => M.historial(),
+        desc: () => M.descargarDatos(),
+        borrar: () => App.confirmar("Eliminar cuenta del portal",
+          "Tu cuenta institucional no se elimina; solo se borran tus datos de este portal (publicaciones, viajes, préstamos de prueba) y se cierra la sesión. Para dar de baja tu correo acude a Servicios Escolares.",
+          "Eliminar mis datos", () => { App.restablecer(); App.cerrarSesion(); App.render(true); App.toast("Tus datos del portal se eliminaron"); }, true),
+        guardar: f => {
+          a.visibilidad = f.vis.value; a.mostrarCarrera = f.carrera.checked; a.mostrarMatricula = f.matricula.checked;
+          App.guardar(); App.cerrarModal(); App.render(); App.toast("Preferencias de privacidad guardadas");
+        } } });
+  };
+
+  M.historial = function () {
+    const lista = App.state.actividad;
+    App.modal(`<div class="modal-head"><h2>Historial de actividad</h2></div>
+      <div class="modal-body">${lista.length ? lista.map(x => `<div class="kv"><b style="text-align:left">${U.esc(x.txt)}</b><span class="small">${U.hace(x.t)}</span></div>`).join("") : `<p class="muted">Sin actividad registrada.</p>`}</div>
+      <div class="modal-foot"><button class="btn btn-outline" data-m="volver">Volver</button></div>`, { acciones: { volver: () => M.privacidad() } });
+  };
+
+  M.descargarDatos = function () {
+    const s = App.state;
+    const datos = { usuario: Object.assign({}, s.usuario, { password: undefined }), ajustes: s.ajustes, publicaciones: s.posts.filter(p => p.propio).map(p => ({ titulo: p.titulo, texto: p.texto, categoria: p.cat })),
+      pagos: s.historialPagos, solicitudes: s.solicitudes, prestamos: s.prestamos, viajes: s.reservasViaje, actividad: s.actividad };
+    const txt = JSON.stringify(datos, null, 2);
+    try {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([txt], { type: "application/json" }));
+      a.download = "mis-datos-utsc-" + s.usuario.matricula + ".json";
+      document.body.appendChild(a); a.click(); a.remove();
+    } catch (e) { /* algunos visores bloquean descargas; abajo se muestra el contenido */ }
+    App.modal(`<div class="modal-head"><h2>Tus datos</h2><p class="small muted">Se descargó el archivo <span class="mono">mis-datos-utsc-${s.usuario.matricula}.json</span>. Si tu navegador lo bloqueó, puedes copiar el contenido.</p></div>
+      <div class="modal-body"><textarea class="textarea mono" style="min-height:240px;font-size:12px" readonly id="datos-json">${U.esc(txt)}</textarea></div>
+      <div class="modal-foot"><button class="btn btn-outline" data-m="volver">Volver</button><button class="btn btn-primary" data-m="copiar">Copiar</button></div>`,
+      { ancho: true, acciones: { volver: () => M.privacidad(), copiar: () => { const t = document.getElementById("datos-json"); t.select(); U.copiar("datos del portal"); try { navigator.clipboard.writeText(t.value); } catch (e) { } } } });
+  };
+
+  M.agregarCuenta = function () {
+    App.modal(`<div class="modal-head row"><img src="img/logo-utsc.png" alt="" style="width:40px"><div><h2>Agregar cuenta</h2><p class="small muted">Solo cuentas @utsc.edu.mx</p></div></div>
+      <form data-m="guardar" novalidate><div class="modal-body">
+        <div class="field"><label for="ac-c">Correo institucional</label><input class="input" id="ac-c" name="correo" type="email" placeholder="matricula@utsc.edu.mx"></div>
+        <div class="field"><label for="ac-p">Contraseña</label><input class="input" id="ac-p" name="pass" type="password" placeholder="Contraseña institucional"></div>
+        <button class="btn btn-primary btn-lg btn-block">Agregar cuenta</button>
+        <button type="button" class="btn btn-ghost" data-m="cerrar">Cancelar</button>
+      </div></form>`, { acciones: { guardar: f => {
+        const usadas = [App.state.usuario.correo, ...App.state.cuentasExtra.map(c => c.correo)];
+        const ok = App.validar(f, {
+          correo: v => !/^[a-z0-9]+([._-][a-z0-9]+)*@utsc\.edu\.mx$/i.test(v) ? "Usa un correo que termine en @utsc.edu.mx." : usadas.includes(v.toLowerCase()) ? "Esa cuenta ya está agregada." : "",
+          pass: v => v.length < 6 ? "Escribe la contraseña de esa cuenta." : ""
+        });
+        if (!ok) return;
+        App.state.cuentasExtra.push({ correo: f.correo.value.trim().toLowerCase(), password: f.pass.value });
+        App.guardar(); App.cerrarModal(); App.render(); App.toast("Cuenta agregada. Cámbiala desde tu menú.");
+      } } });
+  };
+
+  M.cambiarCuenta = function (el) {
+    const c = App.state.cuentasExtra[Number(el.dataset.i)];
+    App.cerrarSesion(); App.render(true);
+    const inp = document.getElementById("l-correo");
+    if (inp) { inp.value = c.correo; document.getElementById("l-pass").focus(); }
+    App.toast("Escribe la contraseña de " + c.correo);
+  };
+
+  M.salir = function () {
+    App.registrar("Cerraste sesión"); App.guardar();
+    App.cerrarSesion(); location.hash = ""; App.render(true);
+  };
+})();

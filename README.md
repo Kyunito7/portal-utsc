@@ -1,76 +1,51 @@
 # Portal Universitario UTSC
 
-Aplicación Web Progresiva (PWA) que simula el portal estudiantil de la Universidad Tecnológica de Santa Catarina. Los módulos institucionales se muestran bloqueados y el desarrollo se concentra en el **blog estudiantil**, con funcionamiento sin conexión y moderación de contenido con inteligencia artificial.
+PWA del portal estudiantil de la Universidad Tecnológica de Santa Catarina.
 
-Proyecto escolar — Ingeniería en Desarrollo de Software Multiplataforma, grupo DSM04AV.
+## Avance por semana
 
-## Equipo
+| Semana | Tema | Estado |
+|---|---|---|
+| 21–25 sep | Propuesta y alcance | ✅ |
+| 5–9 oct | App shell y base web | ✅ |
+| 19–23 oct | Service worker y caché | Pendiente |
+| 2–6 nov | Datos offline y estrategias | Pendiente |
+| 16–20 nov | Capacidades avanzadas y rendimiento | Pendiente |
+| 1–4 dic | Entrega y presentación | Pendiente |
 
-| Integrante | Rol |
-|---|---|
-| Juan Manuel Flores Fernández | Líder de proyecto y backend |
-| Elisa Berenice Ovalle Sánchez | Interfaz |
-| Juan Francisco Sánchez Pérez | Diseño (Figma) |
-| [Tony] | Base de datos |
+## Semana 2: App shell y base web
 
-## Requisitos
+- **App shell:** el encabezado, la barra de módulos y el pie están escritos directamente en `index.html` (dentro de `#shell`). Se pintan al instante; JavaScript solo cambia el contenido de `<main id="vista">`. Mientras carga, se ve un esqueleto.
+- **Código separado:** `css/app.css`, `js/datos.js`, `js/nucleo.js`, `js/menu-usuario.js`, `js/vistas/*.js` (una vista por archivo) y `js/app.js` (rutas y render).
+- **Manifest:** `manifest.webmanifest` con nombre, colores, `display: standalone`, iconos de 192 y 512 px (incluye uno *maskable*) y accesos directos.
+- **Iconos:** set de iconos de línea (Lucide, licencia ISC) en un sprite SVG al inicio de `index.html`. En JS se usan con `I("bell")`.
 
-- Node.js 18 o superior
-- npm
+## Cómo correrlo
 
-## Cómo ejecutarlo
-
-```bash
-git clone https://github.com/Kyunito7/portal-utsc.git
-cd portal-utsc
-npm install
-npm run dev
-```
-
-El portal queda en `http://localhost:5173`.
-
-Para probar las funciones de PWA hay que generar la versión de producción:
+El manifest (y en la semana 3 el service worker) no funcionan abriendo el archivo con doble clic. Hay que usar un servidor local:
 
 ```bash
-npm run build
-npm run preview
+python3 -m http.server 8000
+# abre http://localhost:8000
 ```
+
+O en VS Code con la extensión **Live Server**.
+
+Para revisar el manifest: Chrome → DevTools → **Application → Manifest**.
 
 ## Estructura
 
 ```
-src/
-  components/   Encabezado, barra de módulos y pie (app shell)
-  pages/        Vistas del portal
-  data/         Datos de prueba mientras no existe la API
-  styles/       Estilos globales y variables de color
-public/icons/   Iconos del manifiesto (pendientes)
-docs/           Documentación entregable
+index.html              app shell + sprite de iconos
+manifest.webmanifest
+css/app.css
+js/iconos.js            función I() para los iconos
+js/datos.js             catálogo y datos de ejemplo
+js/nucleo.js            guardado, utilidades, modales, avisos
+js/menu-usuario.js      perfil, configuración, privacidad
+js/vistas/*.js          una vista por sección
+js/app.js               login, shell, rutas y render
+img/                    fotos, logo e iconos de la app
 ```
 
-## Ramas
-
-- `main` — versiones entregadas al docente, una etiqueta por entrega.
-- `develop` — integración del trabajo del equipo.
-- `feature/nombre-de-la-funcion` — trabajo individual.
-
-Flujo de trabajo:
-
-```bash
-git checkout develop
-git pull origin develop
-git checkout -b feature/muro-publicaciones
-# ...trabajar y hacer commits...
-git push origin feature/muro-publicaciones
-```
-
-Después se abre un pull request hacia `develop` para revisión.
-
-## Avance por entrega
-
-- [x] Propuesta y alcance (21–25 sep)
-- [ ] App shell y base web (5–9 oct)
-- [ ] Service worker y caché (19–23 oct)
-- [ ] Datos offline y estrategias (2–6 nov)
-- [ ] Capacidades avanzadas y rendimiento (16–20 nov)
-- [ ] Entrega final y presentación (1–4 dic)
+Cuenta de prueba: `27254@utsc.edu.mx` / `utsc2026`.
