@@ -107,7 +107,9 @@
     App.state.actividad = App.state.actividad.slice(0, 50);
   };
   App.notificar = function (mod, txt, ir) {
-    App.state.notificaciones.unshift({ id: "a" + Date.now(), mod, txt, t: Date.now(), leida: false, ir });
+    const n = { id: "a" + Date.now(), mod, txt, t: Date.now(), leida: false, ir };
+    App.state.notificaciones.unshift(n);
+    if (App.capacidades) App.capacidades.avisoNuevo(n);   // semana 5: notificación del sistema
   };
 
   // ---------- Utilidades ----------

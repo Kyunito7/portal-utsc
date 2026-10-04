@@ -50,9 +50,12 @@
   }
 
   // Cuando el service worker nuevo toma el control, se recarga la página una sola vez.
+  // Solo en actualizaciones: en la primera visita no hay nada viejo que reemplazar
+  // (antes recargaba la página en la primera visita y Lighthouse lo contaba como 4 s perdidos).
   let recargando = false;
+  const habiaControlador = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (recargando) return;
+    if (recargando || !habiaControlador) return;
     recargando = true;
     location.reload();
   });

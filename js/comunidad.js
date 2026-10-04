@@ -81,7 +81,9 @@ window.App = window.App || {};
       const paraMi = a.para === u.correo || (a.para === "rol:" + u.rol);
       if (!paraMi || a.entregadoA.includes(u.correo)) return;
       a.entregadoA.push(u.correo);
-      App.state.notificaciones.unshift({ id: a.id, mod: a.mod, txt: a.txt, t: a.t, leida: false, ir: a.ir });
+      const nueva = { id: a.id, mod: a.mod, txt: a.txt, t: a.t, leida: false, ir: a.ir };
+      App.state.notificaciones.unshift(nueva);
+      if (App.capacidades) App.capacidades.avisoNuevo(nueva, true);   // viene de otra persona: siempre avisa
       n++;
     });
     // Los avisos personales ya entregados se borran; los de rol se quedan para otros moderadores.

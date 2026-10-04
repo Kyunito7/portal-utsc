@@ -23,6 +23,7 @@
   };
 
   M.moderacion = function () { App.ir("moderacion"); };
+  M.instalar = function () { App.capacidades.instalar(); };
 
   M.perfil = function () {
     const u = App.state.usuario, ac = App.academico();
@@ -76,9 +77,19 @@
   }
 
   M.config = function () {
-    const a = App.state.ajustes, u = App.state.usuario;
+    const a = App.state.ajustes, u = App.state.usuario, K = App.capacidades;
+    const permiso = K.permiso();
+    const estadoNotif = permiso === "granted" ? `${I("bell-ring")} <span>Notificaciones del sistema <b>activadas</b></span><button type="button" class="link" data-m="probar" style="margin-left:auto">Probar</button>`
+      : permiso === "denied" ? `${I("bell-off")} <span>Bloqueaste las notificaciones. Actívalas desde el candado de la barra de direcciones.</span>`
+      : permiso === "no-soportado" ? `${I("bell-off")} <span>Tu navegador no tiene notificaciones.</span>`
+      : `${I("bell")} <span>Recibe los avisos aunque el portal esté cerrado</span><button type="button" class="btn btn-sm btn-primary" data-m="permiso" style="margin-left:auto">Activar</button>`;
     App.modal(`<div class="modal-head"><h2>Configuración</h2></div>
       <form data-m="guardar"><div class="modal-body">
+        <div class="section-label">App</div>
+        <div class="action-row" style="cursor:default">${estadoNotif}</div>
+        ${K.instalada() ? `<div class="action-row" style="cursor:default;color:var(--teal);font-weight:600">${I("smartphone")} Estás usando el portal instalado como app ✓</div>`
+          : `<button type="button" class="action-row" data-m="instalar" data-solo-instalable ${K.puedeInstalar() ? "" : "hidden"}>${I("download")} Instalar el portal como app</button>`}
+        <button type="button" class="action-row" data-m="rendimiento">${I("gauge")} Rendimiento de esta visita</button>
         <div class="section-label">Notificaciones</div>
         ${sw("cf-1", "notifBlog", "Nuevas publicaciones en el blog", a.notifBlog)}
         ${sw("cf-2", "notifComentarios", "Comentarios en mis publicaciones", a.notifComentarios)}
@@ -95,6 +106,10 @@
         <button class="btn btn-dark btn-block" type="submit">Guardar y cerrar</button>
       </div></form>`, { acciones: {
         pass: () => M.cambiarPassword(),
+        permiso: async () => { await App.capacidades.pedirPermiso(); M.config(); },
+        probar: () => App.capacidades.mostrar({ titulo: "Prueba · Portal UTSC", texto: "Así se ven los avisos del portal.", ir: "inicio", etiqueta: "prueba" }),
+        instalar: () => App.capacidades.instalar(),
+        rendimiento: () => M.rendimiento(),
         pendientes: () => { App.cerrarModal(true); App.cola.mostrar(); },
         reset: () => App.confirmar("Restablecer datos", "Se borrarán tus publicaciones, pagos, trámites y viajes de prueba y se cargarán los datos de ejemplo originales.", "Restablecer", () => {
           App.restablecer(); App.render(); App.toast("Datos de ejemplo restablecidos");
@@ -124,6 +139,26 @@
         ? `${I("database")} <span>Tus datos están en IndexedDB${persistente ? " con <b>almacenamiento persistente</b> (el navegador no los borrará)" : " · el navegador podría borrarlos si se queda sin espacio"}</span>`
         : `${I("triangle-alert")} <span>Este navegador no permite IndexedDB (¿modo incógnito?). Tus datos se guardan de forma temporal.</span>`;
     })();
+  };
+
+  // Core Web Vitals medidos en esta visita (semana 5: rendimiento).
+  M.rendimiento = function () {
+    const K = App.capacidades, m = K.metricas;
+    const fila = (clave, nombre, desc, valor, unidad) => {
+      const c = K.calificar(clave, valor);
+      return `<div class="metrica ${c}"><div class="grow"><b>${nombre}</b><span class="small muted">${desc}</span></div>
+        <span class="mono">${valor == null ? "—" : valor + unidad}</span><span class="badge ${{ bueno: "b-green", medio: "b-yellow", malo: "b-red", na: "" }[c]}">${{ bueno: "Bien", medio: "Mejorable", malo: "Lento", na: "Sin dato" }[c]}</span></div>`;
+    };
+    App.modal(`<div class="modal-head row">${I("gauge")}<div><h2>Rendimiento de esta visita</h2><span class="small muted">Medido en tu dispositivo con las métricas Core Web Vitals</span></div></div>
+      <div class="modal-body metricas">
+        ${fila("lcp", "LCP · Carga del contenido principal", "Cuánto tardó en verse lo más grande de la pantalla", m.lcp, " ms")}
+        ${fila("inp", "INP · Respuesta al tocar", "La interacción más lenta (clic o tecla) de esta visita", m.inp, " ms")}
+        ${fila("cls", "CLS · Estabilidad visual", "Cuánto se movió el contenido mientras cargaba", m.cls, "")}
+        ${fila("fcp", "FCP · Primer contenido", "Cuándo apareció lo primero en pantalla", m.fcp, " ms")}
+        ${fila("ttfb", "TTFB · Respuesta del servidor", "Cuánto tardó en llegar el primer byte", m.ttfb, " ms")}
+        <p class="small muted">Si el portal se abrió desde el caché del service worker, los tiempos son muy bajos aunque no haya internet.</p>
+      </div>
+      <div class="modal-foot"><button class="btn btn-outline" data-m="volver">Volver</button></div>`, { acciones: { volver: () => M.config() } });
   };
 
   M.cambiarPassword = function () {

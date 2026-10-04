@@ -25,6 +25,11 @@
           <div class="row"><a class="btn btn-primary btn-lg" href="#blog">${I("pencil")} Publicar en el blog</a><a class="btn btn-glass btn-lg" href="#noticias">${I("newspaper")} Ver noticias</a></div>
         </div></section>
         <div class="wrap page stack" style="gap:32px">
+          ${s.ajustes.ocultarInstalar || App.capacidades.instalada() ? "" : `<section class="card instalar-app" data-solo-instalable ${App.capacidades.puedeInstalar() ? "" : "hidden"}>
+            <span class="ico" aria-hidden="true">${I("smartphone")}</span>
+            <div class="grow"><b>Instala el Portal UTSC</b><span class="small muted">Ábrelo como app desde tu pantalla de inicio, más rápido y sin conexión.</span></div>
+            <div class="row"><button class="btn btn-ghost btn-sm" data-a="ocultarInstalar">Ahora no</button><button class="btn btn-primary btn-sm" data-a="instalar">${I("download")} Instalar</button></div>
+          </section>`}
           <section class="card-dark student-card">
             <span class="avatar avatar-lg">${U.iniciales(U.nombreCompleto())}</span>
             <div class="grow"><span class="small" style="color:#a9aec2">Bienvenido de vuelta,</span><b>${U.esc(u.nombre)}</b><small>${u.matricula} · ${u.grupo} · ${U.carrera(u.carrera)}</small></div>
@@ -38,7 +43,7 @@
             <div class="quick-grid">${cat.modulos.map(m => `<a class="quick" href="#${m.id}"><span class="ico" aria-hidden="true">${I(m.ico)}</span><b>${m.nombre}</b><small>${m.desc}</small></a>`).join("")}</div>
           </section>
           <section class="campus">
-            <img src="img/campus-aereo.jpg" alt="Vista aérea del campus de la UTSC" loading="lazy" width="1704" height="632">
+            <img src="img/campus-aereo.webp" alt="Vista aérea del campus de la UTSC" loading="lazy" decoding="async" width="1704" height="632">
             <div class="content"><span class="pill-live" style="justify-self:start">Nuestro campus</span>
               <h2>${cat.universidad.nombre}</h2>
               <p>${cat.universidad.direccion}. Al pie de la Sierra Madre, en ${cat.universidad.ciudad}.</p></div>
@@ -62,6 +67,10 @@
             </div>
           </div>
         </div>`;
+    },
+    acciones: {
+      instalar() { App.capacidades.instalar(); },
+      ocultarInstalar(el) { App.state.ajustes.ocultarInstalar = true; App.guardar(); el.closest(".instalar-app").remove(); }
     }
   };
 })();

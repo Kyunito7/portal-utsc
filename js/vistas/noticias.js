@@ -11,7 +11,8 @@
         <p class="small muted">Por Comunicación Institucional UTSC</p>
         ${n.cuerpo.map(p => `<p>${U.esc(p)}</p>`).join("")}
       </div>
-      <div class="modal-foot"><button class="btn btn-dark" data-m="cerrar">Cerrar</button></div>`, { ancho: true });
+      <div class="modal-foot"><button class="btn btn-outline" data-m="compartir">${I("share-2")} Compartir</button><button class="btn btn-dark" data-m="cerrar">Cerrar</button></div>`,
+      { ancho: true, acciones: { compartir: () => App.capacidades.compartir({ titulo: n.titulo, texto: n.resumen, hash: "noticias?n=" + n.id }) } });
     const c = document.querySelector(".overlay .cover"); if (c) c.style.height = "200px";
   }
 
@@ -35,6 +36,11 @@
             <div class="body"><div class="row"><span class="badge ${U.claseCategoria(n.cat)}">${n.cat}</span><span class="mono small muted">${n.min} min</span></div>
             <h3>${U.esc(n.titulo)}</h3><p>${U.esc(n.resumen)}</p><span class="mono small muted">${U.fecha(n.fecha)}</span></div></button>`).join("")}</div>
       </div>`;
+    },
+    alMostrar() {
+      const id = App.consulta().get("n");   // enlace compartido: #noticias?n=ID
+      const n = id && App.CATALOGO.noticias.find(x => x.id === id);
+      if (n) abrir(n);
     },
     acciones: {
       cat(el) { local.cat = el.dataset.cat; App.render(); },

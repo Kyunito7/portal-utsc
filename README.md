@@ -21,7 +21,7 @@ Proyecto de la materia Aplicaciones Web — Ingeniería en Desarrollo de Softwar
 | 5–9 oct | App shell y base web | ✅ |
 | 19–23 oct | Service worker y caché | ✅ |
 | 2–6 nov | Datos offline y estrategias | ✅ |
-| 16–20 nov | Capacidades avanzadas y rendimiento | Pendiente |
+| 16–20 nov | Capacidades avanzadas y rendimiento | ✅ |
 | 1–4 dic | Entrega y presentación | Pendiente |
 
 ## Semana 2: App shell y base web
@@ -52,12 +52,12 @@ El portal funciona **sin internet** después de abrirlo una vez con conexión.
   - **Aviso de «Sin conexión»** y una línea amarilla en el encabezado mientras no hay internet.
   - En **Configuración → Uso sin conexión**: versión del caché, número de archivos guardados y espacio usado.
 
-**Cómo publicar un cambio:** después de modificar cualquier archivo, sube `VERSION` en `sw.js` (por ejemplo `v1.6.0` → `v1.6.1`). Si agregas un archivo nuevo, agrégalo también a la lista `APP_SHELL`.
+**Cómo publicar un cambio:** después de modificar cualquier archivo, sube `VERSION` en `sw.js` (por ejemplo `v1.7.0` → `v1.7.1`). Si agregas un archivo nuevo, agrégalo también a la lista `APP_SHELL`.
 
 **Cómo probarlo:**
 1. `python3 -m http.server 8000` y abre `http://localhost:8000` (el service worker solo funciona en `localhost` o `https`).
 2. Chrome → DevTools → **Application → Service workers**: debe aparecer `sw.js` como *activated and running*.
-3. **Application → Cache storage → utsc-shell-v1.6.0**: ahí están los archivos guardados.
+3. **Application → Cache storage → utsc-shell-v1.7.0**: ahí están los archivos guardados.
 4. En **Network** marca **Offline** y recarga: el portal sigue funcionando.
 
 ## Semana 4: Datos offline y estrategias
@@ -94,6 +94,53 @@ Ahora el portal no solo **abre** sin internet: también **guarda lo que haces** 
 | Pagos (`/api/`) | **Solo red** | Un cobro no se puede guardar para después: sin conexión aparece «Necesitas conexión para pagar» |
 
 **Cómo probarlo:** DevTools → **Network → Offline**, publica algo en el Blog y escribe a un departamento. Verás la etiqueta «Pendiente de enviar» y el indicador en el encabezado. En **Application → IndexedDB → utsc-portal → cola** están las acciones. Quita Offline y en un momento se envían solas.
+
+## Semana 5: Capacidades avanzadas y rendimiento
+
+**Capacidades nuevas** (`js/capacidades.js`). Todas son mejora progresiva: si el navegador no las tiene, el portal sigue funcionando.
+
+| Capacidad | API | Dónde se ve |
+|---|---|---|
+| Instalar como app | `beforeinstallprompt`, `appinstalled` | Tarjeta en Inicio, menú de usuario y Configuración. En iPhone muestra los pasos de Safari |
+| Notificaciones del sistema | `Notification`, `registration.showNotification`, `notificationclick` | Configuración → Activar. Llegan las decisiones de moderación, mensajes y lo que se envió sin conexión. Al tocarlas abre la sección |
+| Push desde servidor | evento `push` en `sw.js` | Listo para cuando el backend (Supabase) mande notificaciones |
+| Insignia en el icono | `navigator.setAppBadge` | Número de avisos sin leer en el icono de la app instalada |
+| Compartir | Web Share API (si no hay, copia el enlace) | Botón «Compartir» en publicaciones y noticias |
+| Enlaces directos | `#blog?p=ID`, `#noticias?n=ID` | Abren y resaltan la publicación o noticia compartida |
+| Recibir lo compartido | `share_target` en el manifest | Con la app instalada en Android, compartir un enlace al portal lo pone en el formulario del blog |
+| Atajos | `shortcuts` en el manifest | Mantén presionado el icono: Blog, Noticias, Horario, Pagos |
+
+**Rendimiento.** Medido con Lighthouse (celular simulado) sobre la pantalla de inicio de sesión:
+
+| | Antes | Después |
+|---|---|---|
+| Rendimiento | 80 | 91–99 |
+| Accesibilidad | 95 | 100 |
+| Buenas prácticas | 100 | 100 |
+| SEO | 100 | 100 |
+| LCP (contenido principal) | 5.3 s | 2.1–3.5 s |
+| Peso total | 619 KB | 566 KB |
+
+Qué se hizo:
+- **Se quitó una recarga en la primera visita**: el portal se recargaba solo al instalarse el service worker (Lighthouse lo contaba como 4.3 s perdidos). Ahora solo recarga al actualizar de versión.
+- **El encabezado del inicio de sesión viene escrito en el HTML**, así se ve antes de que cargue JavaScript.
+- **La pantalla no espera a las noticias** para pintarse; se descargan al mismo tiempo.
+- **Fotos del campus en WebP** (~45 % más ligeras) y `loading="lazy"` / `decoding="async"` en imágenes.
+- **`content-visibility: auto`** en publicaciones y noticias: lo que está fuera de pantalla no se dibuja hasta que te acercas.
+- **Colores con contraste 4.5:1** en botones, enlaces y texto gris.
+- **Core Web Vitals en vivo**: Configuración → *Rendimiento de esta visita* muestra LCP, INP, CLS, FCP y TTFB medidos en tu dispositivo.
+
+En GitHub Pages el rendimiento sube más porque el servidor comprime los archivos (Lighthouse estima 200 KB menos).
+
+## Publicado en internet (GitHub Pages)
+
+El portal necesita **HTTPS** para instalarse en el celular, usar notificaciones y cifrar contraseñas. GitHub Pages lo da gratis:
+
+1. En GitHub: **Settings → Pages**.
+2. *Source*: **Deploy from a branch**. *Branch*: **main** y carpeta **/ (root)**. **Save**.
+3. En uno o dos minutos queda en `https://kyunito7.github.io/portal-utsc/`.
+
+Se publica lo que esté en `main`, o sea, las entregas. El archivo `.nojekyll` evita que GitHub procese los archivos (se sirven tal cual).
 
 ## Moderación del blog
 
@@ -157,6 +204,7 @@ js/datos.js             catálogo y datos de ejemplo
 js/bd.js                base IndexedDB: cuentas, estado y cola
 js/cuentas.js           cuentas de usuario (hash de contraseña)
 js/nucleo.js            guardado, utilidades, modales, avisos
+js/capacidades.js       instalar, notificaciones, compartir, métricas de rendimiento
 js/contenido.js         descarga de noticias y eventos
 js/sync.js              cola de envío y sincronización
 js/moderacion.js        moderador automático (filtro; después IA)

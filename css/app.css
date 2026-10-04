@@ -20,7 +20,7 @@
   --line: #e6e1d8;
   --white: #ffffff;
   --ink: #1b1f2e;
-  --muted: #7b8094;
+  --muted: #646a7d;   /* semana 5: más contraste (4.5:1) */
   --muted-2: #a2a6b5;
   --red: #e5384c;
   --red-soft: #fdecee;
@@ -88,8 +88,9 @@ p { margin: 0; }
 }
 .btn:active { transform: translateY(1px); }
 .btn:disabled { opacity: .45; cursor: not-allowed; }
-.btn-primary { background: var(--orange); color: var(--white); }
-.btn-primary:hover:not(:disabled) { background: var(--orange-dark); }
+/* Botón principal un poco más oscuro que el naranja de marca para que el texto blanco se lea bien (contraste 4.5:1). */
+.btn-primary { background: #c2570a; color: var(--white); }
+.btn-primary:hover:not(:disabled) { background: #a94b08; }
 .btn-dark { background: var(--navy); color: var(--white); }
 .btn-dark:hover { background: var(--navy-2); }
 .btn-outline { border-color: var(--line); background: var(--white); }
@@ -101,7 +102,7 @@ p { margin: 0; }
 .btn-block { width: 100%; }
 .btn-lg { padding: 14px 22px; font-size: 16px; }
 .btn-sm { padding: 6px 12px; font-size: 13px; border-radius: var(--r-sm); }
-.link { background: none; border: 0; padding: 0; color: var(--teal); font-weight: 600; font-size: 14px; }
+.link { background: none; border: 0; padding: 0; color: #0f766e;   /* teal más oscuro: contraste 4.5:1 */ font-weight: 600; font-size: 14px; }
 .link:hover { text-decoration: underline; }
 
 /* ---------- Formularios ---------- */
@@ -193,7 +194,7 @@ p { margin: 0; }
   min-height: 100vh; display: grid; place-items: center; padding: 24px 16px;
   background:
     linear-gradient(rgba(27,31,46,.78), rgba(27,31,46,.9)),
-    url("../img/campus-aereo.jpg") center / cover no-repeat,
+    url("../img/campus-aereo.webp") center / cover no-repeat,
     linear-gradient(160deg, #3b4a5a, #24303a 60%, #3c3324);
 }
 .login-inner { width: min(448px, 100%); display: grid; gap: 24px; justify-items: center; text-align: center; color: var(--white); transition: width .3s var(--ease); }
@@ -297,14 +298,14 @@ p { margin: 0; }
 .hero {
   background:
     linear-gradient(90deg, rgba(27,31,46,.95) 22%, rgba(27,31,46,.5) 60%, rgba(27,31,46,.15)),
-    url("../img/campus-montana.jpg") center 82% / cover no-repeat,
+    url("../img/campus-montana.webp") center 82% / cover no-repeat,
     linear-gradient(120deg, #2c3a44, #3a4a3a);
   color: var(--white);
 }
 @media (max-width: 700px) {
   .hero { background:
     linear-gradient(rgba(27,31,46,.8), rgba(27,31,46,.85)),
-    url("../img/campus-montana.jpg") 70% 85% / cover no-repeat, var(--navy); }
+    url("../img/campus-montana.webp") 70% 85% / cover no-repeat, var(--navy); }
 }
 .hero .wrap { padding-block: 72px; display: grid; gap: 20px; justify-items: start; }
 .pill-live {
@@ -645,6 +646,8 @@ input[type=search].input {
 .sk-grid .sk { height: 110px; }
 @keyframes brillo { from { background-position: 200% 0; } to { background-position: -200% 0; } }
 .sin-sesion #shell { display: none; }
+html:not(.sin-sesion) #login { display: none; }
+.login.ya .login-logo { animation: none; }   /* ya se veía desde el HTML: no se vuelve a animar */
 .sin-sesion body { background: var(--navy); }
 
 /* =====================================================================
@@ -815,3 +818,22 @@ html { scroll-behavior: smooth; }
 .mod-hist.ok > .i { color: var(--green); }
 .mod-hist.no > .i { color: var(--red); }
 #dropdown .count { margin-left: auto; }
+
+/* ---------- Semana 5: capacidades avanzadas y rendimiento ---------- */
+/* Las publicaciones fuera de pantalla no se dibujan hasta que te acercas (rendimiento en listas largas). */
+.post, .news-card, .mod-item { content-visibility: auto; contain-intrinsic-size: auto 360px; }
+.post.resaltado { box-shadow: 0 0 0 3px var(--orange), var(--shadow); transition: box-shadow .3s; }
+@media (max-width: 520px) { .solo-ancho { display: none; } }
+.instalar-app { display: flex; align-items: center; gap: 14px; padding: 16px 18px; flex-wrap: wrap; border: 1.5px solid var(--orange-soft); }
+.instalar-app[hidden] { display: none; }
+.instalar-app .ico { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; background: var(--orange-soft); color: var(--orange-dark); flex: none; }
+.instalar-app b { display: block; }
+.pasos { margin: 0; padding-left: 20px; display: grid; gap: 10px; }
+.pasos .i { width: 16px; height: 16px; vertical-align: -3px; }
+.metricas { display: grid; gap: 10px; }
+.metrica { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; border-left-width: 4px; }
+.metrica b { display: block; font-size: 14px; }
+.metrica .mono { font-weight: 700; }
+.metrica.bueno { border-left-color: var(--green); }
+.metrica.medio { border-left-color: #f2b632; }
+.metrica.malo { border-left-color: var(--red); }

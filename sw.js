@@ -1,6 +1,7 @@
 /* =====================================================================
    Service worker del Portal UTSC
-   (semana 3: service worker y caché · semana 4: datos offline y estrategias)
+   (semana 3: service worker y caché · semana 4: datos offline y estrategias ·
+    semana 5: notificaciones y push)
 
    Qué hace:
    1. INSTALACIÓN: guarda en caché el "app shell" (HTML, CSS, JS, fuentes,
@@ -25,7 +26,7 @@
       que envíe la cola de acciones pendientes (ver js/sync.js).
    ===================================================================== */
 
-const VERSION = "v1.6.0";
+const VERSION = "v1.7.0";
 const CACHE_SHELL = `utsc-shell-${VERSION}`;
 const CACHE_IMAGENES = "utsc-imagenes";      // se conserva entre versiones
 const CACHE_DATOS = "utsc-datos";            // contenido (noticias/eventos), se conserva entre versiones
@@ -43,6 +44,7 @@ const APP_SHELL = [
   "./js/bd.js",
   "./js/cuentas.js",
   "./js/nucleo.js",
+  "./js/capacidades.js",
   "./js/contenido.js",
   "./js/sync.js",
   "./js/moderacion.js",
@@ -67,8 +69,8 @@ const APP_SHELL = [
   "./fonts/jetbrains-mono-400.woff2",
   "./fonts/jetbrains-mono-700.woff2",
   "./img/logo-utsc.png",
-  "./img/campus-aereo.jpg",
-  "./img/campus-montana.jpg",
+  "./img/campus-aereo.webp",
+  "./img/campus-montana.webp",
   "./img/iconos/icono-32.png",
   "./img/iconos/icono-192.png",
   "./img/iconos/icono-512.png",
@@ -214,4 +216,34 @@ async function avisarClientes(mensaje) {
 // El navegador dispara este evento cuando vuelve la red (aunque la pestaña esté en segundo plano).
 self.addEventListener("sync", evento => {
   if (evento.tag === "utsc-cola") evento.waitUntil(avisarClientes({ tipo: "SINCRONIZAR" }));
+});
+
+// ---------- 5. Notificaciones (semana 5) ----------
+// Al tocar una notificación: si el portal ya está abierto se enfoca y va a la sección;
+// si no, se abre una ventana nueva.
+self.addEventListener("notificationclick", evento => {
+  evento.notification.close();
+  const destino = new URL((evento.notification.data && evento.notification.data.url) || "./index.html", self.location.href);
+  evento.waitUntil((async () => {
+    const ventanas = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    const abierta = ventanas.find(c => new URL(c.url).pathname === destino.pathname);
+    if (abierta) {
+      await abierta.focus();
+      abierta.postMessage({ tipo: "NAVEGAR", hash: destino.hash.slice(1) });
+    } else {
+      await self.clients.openWindow(destino.href);
+    }
+  })());
+});
+
+// Push desde un servidor (lista para cuando exista el backend con Supabase):
+// el servidor manda { "titulo": "...", "texto": "...", "ir": "blog" } y aquí se muestra.
+self.addEventListener("push", evento => {
+  let datos = {};
+  try { datos = evento.data ? evento.data.json() : {}; } catch (e) { datos = { texto: evento.data && evento.data.text() }; }
+  evento.waitUntil(self.registration.showNotification(datos.titulo || "Portal UTSC", {
+    body: datos.texto || "Tienes un aviso nuevo.",
+    icon: "img/iconos/icono-192.png", badge: "img/iconos/icono-32.png", lang: "es-MX",
+    data: { url: "./index.html#" + (datos.ir || "inicio") }
+  }));
 });

@@ -49,8 +49,8 @@
   function tarjeta(p) {
     const s = App.state, propio = C.esMio(p), mostrarMat = !propio || s.ajustes.mostrarMatricula;
     const abierto = local.abiertos[p.id], liked = C.meGusta(p), comentarios = C.comentariosVisibles(p);
-    return `<article class="card post ${MOD.estado(p) !== "aprobado" ? "post-revision" : ""}">
-      ${p.imagen ? `<img class="post-img" src="${p.imagen}" alt="">` : p.portada ? U.portada(p.portada, "post-img") : ""}
+    return `<article class="card post ${MOD.estado(p) !== "aprobado" ? "post-revision" : ""}" id="post-${p.id}">
+      ${p.imagen ? `<img class="post-img" src="${p.imagen}" alt="" loading="lazy" decoding="async">` : p.portada ? U.portada(p.portada, "post-img") : ""}
       <div class="post-body">
         <div class="row-between"><div class="row"><span class="avatar">${U.iniciales(p.autor)}</span>
           <div><b style="display:block;font-size:14px">${U.esc(p.autor)}</b><span class="mono small muted">${mostrarMat ? p.matricula + " · " : ""}${U.hace(p.t)}</span></div></div>
@@ -61,6 +61,7 @@
         <div class="post-foot">
           <button class="react-btn ${liked ? "on" : ""}" data-a="like" data-id="${p.id}" aria-pressed="${liked}" aria-label="Me gusta">${I("heart")} ${p.likes}</button>
           <button class="react-btn" data-a="comentarios" data-id="${p.id}" aria-expanded="${!!abierto}">${I("message-circle")} ${comentarios.length}</button>
+          ${MOD.estado(p) === "aprobado" && !p.pendiente ? `<button class="react-btn" data-a="compartir" data-id="${p.id}" aria-label="Compartir">${I("share-2")} <span class="solo-ancho">Compartir</span></button>` : ""}
           <span class="grow"></span>
           ${propio ? `<button class="react-btn" data-a="eliminar" data-id="${p.id}">${I("trash-2")} Eliminar</button>`
             : C.yaReporte(p) ? `<span class="small muted">${I("flag")} Reportada</span>` : `<button class="react-btn" data-a="reportar" data-id="${p.id}">${I("flag")} Reportar</button>`}
@@ -128,7 +129,34 @@
         </aside>
       </div></div>`;
     },
+    // Semana 5: abrir una publicación compartida (#blog?p=ID) y recibir lo que otra app compartió.
+    alMostrar(root) {
+      const recibido = App.capacidades.recibido;
+      if (recibido) {
+        App.capacidades.recibido = null;
+        const f = root.querySelector('[data-f="publicar"]');
+        f.titulo.value = recibido.titulo.slice(0, 120); f.texto.value = recibido.texto.slice(0, 2000);
+        f.texto.focus();
+        App.toast("Se agregó lo que compartiste. Revisa y publica.");
+      }
+      const id = App.consulta().get("p");
+      if (!id) return;
+      const p = C.buscar(id);
+      if (!p || !C.puedoVer(p)) { App.toast("Esa publicación ya no está disponible.", "error"); return; }
+      if (!document.getElementById("post-" + id)) { local.cat = "Todos"; local.q = ""; App.refrescar("lista"); }   // estaba filtrada
+      local.abiertos[id] = true; App.refrescar("lista");
+      requestAnimationFrame(() => {
+        const el = document.getElementById("post-" + id);
+        if (!el) return;
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        el.classList.add("resaltado"); setTimeout(() => el.classList.remove("resaltado"), 2400);
+      });
+    },
     acciones: {
+      compartir(el) {
+        const p = C.buscar(el.dataset.id);
+        App.capacidades.compartir({ titulo: p.titulo, texto: p.titulo + " · Blog Estudiantil UTSC", hash: "blog?p=" + p.id });
+      },
       cat(el) { local.cat = el.dataset.cat; App.render(); },
       tag(el) { local.q = "#" + el.dataset.tag; local.cat = "Todos"; App.render(); window.scrollTo(0, 0); },
       like(el) {

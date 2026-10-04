@@ -4,10 +4,12 @@
   const RUTAS = ["inicio", "blog", "noticias", "directorio", "contacto", "kardex", "horarios", "pagos", "tramites", "biblioteca", "driver", "moderacion"];
   App.params = {};
 
+  // La dirección puede traer datos extra: #blog?p=p12 abre esa publicación (para compartir enlaces).
   App.ruta = function () {
-    const r = (location.hash || "").replace("#", "");
+    const r = (location.hash || "").replace("#", "").split("?")[0];
     return RUTAS.includes(r) ? r : "inicio";
   };
+  App.consulta = () => new URLSearchParams((location.hash.split("?")[1]) || "");
   App.ir = function (ruta, params) {
     App.params = params || {};
     if (App.ruta() === ruta && location.hash) { App.render(true); return; }
@@ -207,6 +209,8 @@
     notif.setAttribute("aria-label", "Avisos" + (sinLeer ? ", " + sinLeer + " sin leer" : ""));
     $("#notif-dot").hidden = !sinLeer;
     $("#notif-dot").textContent = sinLeer;
+    App.capacidades.insignia(sinLeer);
+    App.capacidades.pintarBotones();
     App.cola.pintarChip();
 
     document.querySelectorAll("[data-shell=iniciales]").forEach(el => el.textContent = U.iniciales(U.nombreCompleto()));
@@ -261,6 +265,7 @@
       shell.hidden = true;
       login.hidden = false;
       login.innerHTML = pantallaLogin();
+      if (login.hasAttribute("data-pre")) { login.removeAttribute("data-pre"); login.firstElementChild.classList.add("ya"); }
       enlazarLogin(login);
       rutaAnterior = null;
       return;
@@ -355,9 +360,16 @@
   window.addEventListener("hashchange", () => App.render());
 
   App.arrancar = async function () {
-    // Las noticias (data/noticias.json) y la sesión se cargan al mismo tiempo.
-    await Promise.all([App.cargar(), App.contenido.cargar()]);
+    // Las noticias (data/noticias.json) se piden al mismo tiempo, pero la pantalla
+    // no las espera: se pinta en cuanto se sabe si hay sesión (semana 5: rendimiento).
+    const noticias = App.contenido.cargar();
+    await App.cargar();
+    if (App.capacidades.recibido) location.hash = "blog";   // llegó algo compartido desde otra app
+    const necesita = () => App.sesion && ["inicio", "noticias"].includes(App.ruta());
+    const esperada = necesita();
+    if (esperada) await noticias;
     App.render(true);
+    if (!esperada) noticias.then(() => { if (necesita()) App.render(); });
     if (App.sesion) { await App.cola.contar(); App.cola.procesar(); }
   };
 })();

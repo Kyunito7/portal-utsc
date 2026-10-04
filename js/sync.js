@@ -89,6 +89,8 @@
       App.guardar();
       await cola.contar();
       if (App.sesion) App.render();
+      if (avisar && document.visibilityState !== "visible" && App.capacidades)
+        App.capacidades.mostrar({ titulo: "Portal UTSC", texto: avisar === 1 ? "Se envió lo que hiciste sin conexión." : "Se enviaron " + avisar + " acciones que hiciste sin conexión.", ir: "blog", etiqueta: "sync" });
       if (avisar) App.toast(avisar === 1 ? "Se envió 1 acción pendiente" : "Se enviaron " + avisar + " acciones pendientes");
     }
     return enviadas;
