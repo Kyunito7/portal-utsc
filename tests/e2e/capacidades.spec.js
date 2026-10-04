@@ -26,12 +26,26 @@ test("lo compartido desde otra app llega al formulario del blog", async ({ page 
 });
 
 test("las notificaciones salen por el service worker", async ({ page, context }) => {
+  // El Chromium "headless" de GitHub Actions no guarda notificaciones de verdad,
+  // así que se espía la llamada a registration.showNotification() y se revisa qué mandó el portal.
   await context.grantPermissions(["notifications"]);
+  await page.addInitScript(() => {
+    window.__notificaciones = [];
+    // Por si el navegador de CI no respeta grantPermissions:
+    try { Object.defineProperty(Notification, "permission", { get: () => "granted" }); } catch (e) { }
+    const original = ServiceWorkerRegistration.prototype.showNotification;
+    ServiceWorkerRegistration.prototype.showNotification = function (titulo, opciones) {
+      window.__notificaciones.push({ titulo, ...opciones });
+      return original.call(this, titulo, opciones).catch(() => {});
+    };
+  });
   await abrir(page);
   await entrar(page);
   await page.evaluate(() => App.comunidad.avisar(App.state.usuario.correo, "Moderación", "Tu publicación fue aprobada", "blog"));
-  await expect.poll(() => page.evaluate(async () =>
-    (await (await navigator.serviceWorker.ready).getNotifications()).map(n => n.body))).toContain("Tu publicación fue aprobada");
+  await expect.poll(() => page.evaluate(() => window.__notificaciones.map(n => n.body))).toContain("Tu publicación fue aprobada");
+  const n = await page.evaluate(() => window.__notificaciones.find(x => x.body === "Tu publicación fue aprobada"));
+  expect(n.titulo).toBe("Moderación · Portal UTSC");
+  expect(n.data.url).toBe("./index.html#blog");   // al tocarla abre el blog
 });
 
 test("el primer arranque no recarga la página", async ({ page }) => {
