@@ -19,7 +19,7 @@ Proyecto de la materia Aplicaciones Web — Ingeniería en Desarrollo de Softwar
 |---|---|---|
 | 21–25 sep | Propuesta y alcance (`docs/propuesta-y-alcance.docx`) | ✅ |
 | 5–9 oct | App shell y base web | ✅ |
-| 19–23 oct | Service worker y caché | Pendiente |
+| 19–23 oct | Service worker y caché | ✅ |
 | 2–6 nov | Datos offline y estrategias | Pendiente |
 | 16–20 nov | Capacidades avanzadas y rendimiento | Pendiente |
 | 1–4 dic | Entrega y presentación | Pendiente |
@@ -30,6 +30,35 @@ Proyecto de la materia Aplicaciones Web — Ingeniería en Desarrollo de Softwar
 - **Código separado:** `css/app.css`, `js/datos.js`, `js/nucleo.js`, `js/menu-usuario.js`, `js/vistas/*.js` (una vista por archivo) y `js/app.js` (rutas y render).
 - **Manifest:** `manifest.webmanifest` con nombre, colores, `display: standalone`, iconos de 192 y 512 px (incluye uno *maskable*) y accesos directos.
 - **Iconos:** set de iconos de línea (Lucide, licencia ISC) en un sprite SVG al inicio de `index.html`. En JS se usan con `I("bell")`.
+
+## Semana 3: Service worker y caché
+
+El portal funciona **sin internet** después de abrirlo una vez con conexión.
+
+- **`sw.js`** (en la raíz del proyecto) es el service worker:
+  - **Instalación:** guarda en caché todo el app shell (HTML, CSS, JS, fuentes, iconos y fotos), 34 archivos (~1.3 MB).
+  - **Activación:** borra los cachés de versiones anteriores y toma el control de las pestañas abiertas.
+  - **Peticiones (`fetch`)**, con una estrategia según el tipo de archivo:
+
+| Tipo de petición | Estrategia | Por qué |
+|---|---|---|
+| Páginas (navegación) | Red primero, si falla la copia guardada | Siempre intenta el HTML más nuevo, pero abre aunque no haya internet |
+| CSS, JS y fuentes (app shell) | Caché primero | Carga instantánea; se renuevan al cambiar de versión |
+| Imágenes | Caché primero + se guardan al pedirlas (máx. 60) | Las fotos no se vuelven a descargar y no se llena el teléfono |
+| Otros sitios (IEEE, Moodle…) | No se interceptan | No es contenido nuestro |
+
+- **`js/pwa.js`** registra el service worker y muestra:
+  - **Aviso de versión nueva** con botón **Actualizar**: el service worker nuevo espera hasta que el usuario acepta; luego se activa (`skipWaiting`) y la página se recarga una sola vez.
+  - **Aviso de «Sin conexión»** y una línea amarilla en el encabezado mientras no hay internet.
+  - En **Configuración → Uso sin conexión**: versión del caché, número de archivos guardados y espacio usado.
+
+**Cómo publicar un cambio:** después de modificar cualquier archivo, sube `VERSION` en `sw.js` (por ejemplo `v1.4.0` → `v1.4.1`). Si agregas un archivo nuevo, agrégalo también a la lista `APP_SHELL`.
+
+**Cómo probarlo:**
+1. `python3 -m http.server 8000` y abre `http://localhost:8000` (el service worker solo funciona en `localhost` o `https`).
+2. Chrome → DevTools → **Application → Service workers**: debe aparecer `sw.js` como *activated and running*.
+3. **Application → Cache storage → utsc-shell-v1.4.0**: ahí están los archivos guardados.
+4. En **Network** marca **Offline** y recarga: el portal sigue funcionando.
 
 ## Cuentas de usuario
 
@@ -50,7 +79,7 @@ Proyecto de la materia Aplicaciones Web — Ingeniería en Desarrollo de Softwar
 
 ## Cómo correrlo
 
-El manifest (y en la semana 3 el service worker) no funcionan abriendo el archivo con doble clic. Hay que usar un servidor local:
+El manifest y el service worker no funcionan abriendo el archivo con doble clic. Hay que usar un servidor local:
 
 ```bash
 python3 -m http.server 8000
@@ -65,6 +94,7 @@ Para revisar el manifest: Chrome → DevTools → **Application → Manifest**.
 
 ```
 index.html              app shell + sprite de iconos
+sw.js                   service worker (caché y modo sin conexión)
 manifest.webmanifest
 css/app.css
 js/iconos.js            función I() para los iconos
@@ -74,6 +104,7 @@ js/nucleo.js            guardado, utilidades, modales, avisos
 js/menu-usuario.js      perfil, configuración, privacidad
 js/vistas/*.js          una vista por sección
 js/app.js               login, shell, rutas y render
+js/pwa.js               registro del service worker y avisos de conexión/versión
 img/                    fotos, logo e iconos de la app
 fonts/                  Outfit, Fraunces y JetBrains Mono (licencia SIL OFL)
 docs/                   documentos entregables

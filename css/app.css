@@ -739,3 +739,20 @@ html { scroll-behavior: smooth; }
   html { scroll-behavior: auto; }
   ::view-transition-old(vista), ::view-transition-new(vista) { animation: none; }
 }
+
+/* ---------- PWA: avisos de conexión y de versión nueva (semana 3) ---------- */
+.barra-pwa {
+  position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); z-index: 150;
+  transform: translate(-50%, 140%); opacity: 0; transition: transform .4s var(--ease), opacity .3s;
+  display: flex; align-items: center; gap: 12px; width: max-content; max-width: calc(100vw - 32px);
+  background: var(--navy); color: var(--white); padding: 12px 14px 12px 16px; border-radius: 16px; box-shadow: var(--shadow); font-size: 14px;
+}
+.barra-pwa.visible { transform: translate(-50%, 0); opacity: 1; }
+.barra-pwa > .i { width: 20px; height: 20px; color: var(--orange); }
+.barra-pwa.offline { background: #3a2f2a; }
+.barra-pwa.offline > .i { color: #f2b632; }
+.barra-pwa .btn-ghost { color: #c9ccd8; }
+#barra-version { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
+.sin-conexion .topbar { box-shadow: inset 0 -3px 0 #f2b632; }
+#pwa-estado { align-items: flex-start; font-size: 13.5px; }
+#pwa-estado .i { color: var(--green); margin-top: 2px; }

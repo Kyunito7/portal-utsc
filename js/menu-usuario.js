@@ -85,6 +85,8 @@
         <div class="section-label">Cuenta</div>
         <button type="button" class="action-row" data-m="pass">${I("key-round")} Cambiar contraseña</button>
         <div class="action-row" style="color:var(--teal);font-weight:600">${I("mail")} ${u.correo} ✓ verificado</div>
+        <div class="section-label">Uso sin conexión</div>
+        <div class="action-row" id="pwa-estado" style="cursor:default">${I("wifi")} Revisando…</div>
         <button type="button" class="action-row" data-m="reset">${I("rotate-ccw")} Restablecer datos de ejemplo</button>
         <button class="btn btn-dark btn-block" type="submit">Guardar y cerrar</button>
       </div></form>`, { acciones: {
@@ -96,6 +98,16 @@
           ["notifBlog", "notifComentarios", "notifModeracion", "notifInstitucional"].forEach(k => a[k] = f.elements[k].checked);
           App.guardar(); App.cerrarModal(); App.toast("Configuración guardada");
         } } });
+    // Estado del service worker y del caché (semana 3)
+    const caja = document.getElementById("pwa-estado");
+    if (App.pwa && App.pwa.resumen && "caches" in window) {
+      App.pwa.resumen().then(r => {
+        if (!caja.isConnected) return;
+        caja.innerHTML = r.activo
+          ? `${I("circle-check")} <span>Disponible sin internet · versión <b class="mono">${r.version || "—"}</b> · ${r.archivos} archivos guardados (${App.pwa.mb(r.usado)})</span>`
+          : `${I("wifi-off")} <span>Aún no está listo para usarse sin internet. Recarga la página una vez con conexión.</span>`;
+      }).catch(() => { caja.textContent = "No se pudo revisar el caché."; });
+    } else if (caja) caja.textContent = "Tu navegador no permite usar el portal sin conexión.";
   };
 
   M.cambiarPassword = function () {
