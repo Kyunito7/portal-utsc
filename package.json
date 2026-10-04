@@ -1,0 +1,16 @@
+{
+  "name": "portal-utsc",
+  "version": "1.8.0",
+  "private": true,
+  "description": "Portal Universitario UTSC — PWA (Aplicaciones Web, DSM)",
+  "scripts": {
+    "servidor": "python3 -m http.server 8000",
+    "test": "npm run test:unit && npm run test:e2e",
+    "test:unit": "node --test tests/unit/*.test.js",
+    "test:e2e": "playwright test",
+    "test:reporte": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  }
+}

@@ -4,6 +4,12 @@ Aplicación Web Progresiva (PWA) que simula el portal estudiantil de la Universi
 
 Proyecto de la materia Aplicaciones Web — Ingeniería en Desarrollo de Software Multiplataforma, grupo DSM04AV.
 
+![Pruebas](https://github.com/Kyunito7/portal-utsc/actions/workflows/pruebas.yml/badge.svg)
+
+**En línea:** https://kyunito7.github.io/portal-utsc/
+
+> **Prototipo académico.** Las cuentas, el blog y la moderación funcionan dentro del navegador (IndexedDB); todavía no hay servidor. Los datos de kárdex, pagos, trámites y horarios son de demostración y no se cobra nada.
+
 ## Equipo
 
 | Integrante | Rol |
@@ -52,12 +58,12 @@ El portal funciona **sin internet** después de abrirlo una vez con conexión.
   - **Aviso de «Sin conexión»** y una línea amarilla en el encabezado mientras no hay internet.
   - En **Configuración → Uso sin conexión**: versión del caché, número de archivos guardados y espacio usado.
 
-**Cómo publicar un cambio:** después de modificar cualquier archivo, sube `VERSION` en `sw.js` (por ejemplo `v1.7.0` → `v1.7.1`). Si agregas un archivo nuevo, agrégalo también a la lista `APP_SHELL`.
+**Cómo publicar un cambio:** después de modificar cualquier archivo, sube `VERSION` en `sw.js` (por ejemplo `v1.8.0` → `v1.8.1`). Si agregas un archivo nuevo, agrégalo también a la lista `APP_SHELL`.
 
 **Cómo probarlo:**
 1. `python3 -m http.server 8000` y abre `http://localhost:8000` (el service worker solo funciona en `localhost` o `https`).
 2. Chrome → DevTools → **Application → Service workers**: debe aparecer `sw.js` como *activated and running*.
-3. **Application → Cache storage → utsc-shell-v1.7.0**: ahí están los archivos guardados.
+3. **Application → Cache storage → utsc-shell-v1.8.0**: ahí están los archivos guardados.
 4. En **Network** marca **Offline** y recarga: el portal sigue funcionando.
 
 ## Semana 4: Datos offline y estrategias
@@ -205,6 +211,9 @@ js/bd.js                base IndexedDB: cuentas, estado y cola
 js/cuentas.js           cuentas de usuario (hash de contraseña)
 js/nucleo.js            guardado, utilidades, modales, avisos
 js/capacidades.js       instalar, notificaciones, compartir, métricas de rendimiento
+tests/unit/             pruebas unitarias (node --test)
+tests/e2e/              pruebas de extremo a extremo (Playwright)
+.github/workflows/      pruebas automáticas en GitHub Actions
 js/contenido.js         descarga de noticias y eventos
 js/sync.js              cola de envío y sincronización
 js/moderacion.js        moderador automático (filtro; después IA)
@@ -220,6 +229,27 @@ docs/                   documentos entregables
 
 Cuentas de prueba: alumno `demo@utsc.edu.mx` / `demo2026` y moderador `moderador@utsc.edu.mx` / `modera2026` (o usa los botones de la pantalla de inicio).
 
+## Pruebas automáticas
+
+| Tipo | Qué revisa | Herramienta |
+|---|---|---|
+| Unitarias (12) | Filtro de moderación; que `APP_SHELL` tenga todos los archivos; manifest y noticias válidos | `node --test` |
+| De extremo a extremo (15 × 2) | Cuentas, modo sin conexión y cola de envío, pagos bloqueados offline, moderación completa (alumno → moderador → aviso), enlaces compartidos, share target, notificaciones, métricas | Playwright, en escritorio y en celular (Pixel 7) |
+
+Correrlas en tu computadora (necesitas Node 18 o más nuevo y Python 3):
+
+```bash
+npm install
+npx playwright install chromium
+npm test                 # todas
+npm run test:unit        # solo las rápidas (menos de 1 s)
+npm run test:reporte     # abre el reporte de la última corrida
+```
+
+**En GitHub** corren solas en cada `push` y en cada pull request (`.github/workflows/pruebas.yml`). Junto a cada commit aparece ✅ si todo pasó o ❌ si algo se rompió; en la pestaña **Actions** se ve el detalle.
+
+La prueba de `APP_SHELL` atrapa el error más común: agregar un archivo nuevo y olvidar ponerlo en `sw.js`.
+
 ## Ramas
 
 - `main` — versiones entregadas a la docente.
@@ -234,4 +264,11 @@ git checkout -b feature/mi-funcion
 git push origin feature/mi-funcion
 ```
 
-Después se abre un pull request hacia `develop` para revisión.
+Después se abre un **pull request** hacia `develop`:
+
+1. En GitHub aparece el botón **Compare & pull request** → describe qué cambiaste.
+2. Espera a que las pruebas salgan en ✅.
+3. Otra persona del equipo lo revisa y lo aprueba (**Approve**).
+4. **Merge pull request**.
+
+Así cada integrante tiene su trabajo registrado y nada roto llega a `develop` ni a `main`.

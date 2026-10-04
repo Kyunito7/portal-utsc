@@ -1,0 +1,43 @@
+# Corre las pruebas automáticas en cada push y en cada pull request.
+# Resultado: palomita verde (todo bien) o tache rojo (algo se rompió) junto a cada commit en GitHub.
+name: Pruebas
+
+on:
+  push:
+    branches: [main, develop, "feature/**"]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Pruebas unitarias (moderación, service worker, manifest)
+        run: npm run test:unit
+
+      - name: Instalar Chromium para Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Pruebas de extremo a extremo (escritorio y celular)
+        run: npm run test:e2e
+        env:
+          CI: true
+
+      - name: Guardar el reporte si algo falló
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reporte-playwright
+          path: playwright-report/
+          retention-days: 7

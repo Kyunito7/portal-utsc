@@ -837,3 +837,8 @@ html { scroll-behavior: smooth; }
 .metrica.bueno { border-left-color: var(--green); }
 .metrica.medio { border-left-color: #f2b632; }
 .metrica.malo { border-left-color: var(--red); }
+
+/* ---------- Aviso de datos de demostración ---------- */
+.aviso-demo { display: flex; gap: 10px; align-items: flex-start; padding: 10px 14px; border-radius: 12px; font-size: 13.5px;
+  background: var(--blue-soft); color: #234a8a; border: 1px dashed #a9c2ee; margin: 0; }
+.aviso-demo .i { flex: none; width: 18px; height: 18px; margin-top: 1px; }

@@ -42,7 +42,7 @@
         </div>
         <div id="pago-ref" class="card card-pad" hidden style="background:var(--sand)">
           <p class="small muted">Se generará una referencia para pagar en el banco u OXXO. El cargo se marca como pagado cuando Caja confirme el depósito.</p></div>
-        <p class="small muted">${I("lock")} Pago de prueba: no se realiza ningún cobro real.</p>
+        <p class="aviso-demo">${I("flask-conical")}<span><b>Pago de prueba:</b> no se realiza ningún cobro. Usa un número inventado, no tu tarjeta real.</span></p>
       </div>
       <div class="modal-foot"><button type="button" class="btn btn-outline" data-m="cerrar">Cancelar</button><button class="btn btn-primary">Pagar ${U.dinero(cargo.monto)}</button></div></form>`,
       { acciones: {
@@ -110,6 +110,7 @@
       const cargos = s.cargos.slice().sort((a, b) => a.vence.localeCompare(b.vence));
       const hoy = U.hoyISO();
       return `<div class="wrap page"><div class="page-mid stack" style="gap:28px">
+        ${U.avisoDemo("Los cargos y pagos son de ejemplo y no se cobra nada. No escribas los datos de una tarjeta real.")}
         <section class="card-dark pay-head">
           <div class="row-between" style="align-items:flex-end">
             <div><span style="color:#a9aec2">Adeudo actual</span><div class="amt">${U.dinero(t.adeudo)}</div><span class="small" style="color:#a9aec2">${cargos.length ? cargos.length + (cargos.length === 1 ? " pago pendiente" : " pagos pendientes") : "Sin adeudos"}</span></div>
