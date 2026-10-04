@@ -19,6 +19,7 @@
       const conCal = sel.materias.filter(m => m[2] != null);
       const promSem = conCal.length ? conCal.reduce((a, m) => a + m[2] * m[1], 0) / conCal.reduce((a, m) => a + m[1], 0) : null;
       return `<div class="wrap page"><div class="page-narrow stack" style="gap:24px">
+        ${U.avisoDemo("Las calificaciones se generan a partir de tu cuatrimestre; no vienen del sistema escolar.")}
         <section class="card-dark k-head">
           <div class="grow"><span class="eyebrow">Alumno</span><b>${U.esc(U.nombreCompleto())}</b><small>${u.matricula} · ${u.grupo} · ${U.carrera(u.carrera)}</small></div>
           <div class="stats">

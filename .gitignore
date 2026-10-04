@@ -1,10 +1,8 @@
 node_modules/
-dist/
-dist-ssr/
-.env
-.env.local
-*.local
+test-results/
+playwright-report/
 .DS_Store
 .vscode/
 .idea/
-dev-dist/
+.env
+.env.local

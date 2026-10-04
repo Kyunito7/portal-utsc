@@ -156,6 +156,8 @@
   };
   // Etiqueta para lo que se hizo sin conexión y aún no llega al servidor (semana 4).
   U.pendiente = () => `<span class="badge b-pendiente" title="Se enviará cuando haya conexión">${I("clock")} ${navigator.onLine ? "Enviando…" : "Pendiente de enviar"}</span>`;
+  // Aviso de que los datos son de demostración (prototipo académico).
+  U.avisoDemo = txt => `<div class="aviso-demo" role="note">${I("flask-conical")}<span><b>Datos de demostración.</b> ${txt}</span></div>`;
   U.carrera = clave => (App.CATALOGO.carreras.find(c => c.clave === clave) || {}).nombre || clave;
   U.depto = id => App.CATALOGO.departamentos.find(d => d.id === id);
   U.tramite = id => App.CATALOGO.tramites.find(t => t.id === id);
