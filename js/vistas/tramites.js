@@ -32,16 +32,21 @@
         if (t.id === "baja") reglas.motivo = v => !v ? "Elige el motivo de la baja." : "";
         if (!App.validar(f, reglas)) return;
         const folio = nuevoFolio();
-        App.state.solicitudes.unshift({ folio, tramite: t.id, fecha: U.hoyISO(), estado: 0,
-          nota: t.costo ? "Pendiente de pago en el módulo de Pagos." : "Tu solicitud fue recibida y está en cola de procesamiento.",
+        App.state.solicitudes.unshift({ folio, tramite: t.id, fecha: U.hoyISO(), estado: 0, pendiente: true,
+          nota: "Se enviará a Servicios Escolares en cuanto haya conexión.",
           destino: f.destino ? f.destino.value.trim() : "", obs: f.obs.value.trim() });
+        App.cola.agregar("tramite", { folio, tramite: t.id, costo: t.costo }, t.nombre + " (" + folio + ")");
         if (t.costo) {
           const v = new Date(); v.setDate(v.getDate() + 7);
           App.state.cargos.push({ id: "c" + Date.now(), concepto: t.nombre + " (" + folio + ")", monto: t.costo, vence: v.toISOString().slice(0, 10) });
         }
         App.registrar("Solicitaste " + t.nombre + " (" + folio + ")");
         App.guardar();
-        App.exito(I("circle-check"), "Solicitud enviada", `Tu solicitud de <b>${t.nombre}</b> fue recibida con folio <span class="mono">${folio}</span>. Te avisaremos cuando esté lista.`, "Ver mis solicitudes", () => { local.tab = "mis"; App.render(true); });
+        const enLinea = navigator.onLine;
+        App.exito(I(enLinea ? "circle-check" : "cloud-off"), enLinea ? "Solicitud enviada" : "Solicitud guardada",
+          enLinea ? `Tu solicitud de <b>${t.nombre}</b> fue recibida con folio <span class="mono">${folio}</span>. Te avisaremos cuando esté lista.`
+            : `No hay conexión. Tu solicitud de <b>${t.nombre}</b> (folio <span class="mono">${folio}</span>) quedó guardada y se enviará sola cuando vuelva el internet.`,
+          "Ver mis solicitudes", () => { local.tab = "mis"; App.render(true); });
       } } });
   }
 
@@ -53,6 +58,13 @@
         <p class="small muted">Documento emitido el ${U.fecha(s.fecha)} por Servicios Escolares. Vista previa de prueba, sin validez oficial.</p></div>
       <div class="modal-foot"><button class="btn btn-dark" data-m="cerrar">Cerrar</button></div>`, { ancho: true });
   }
+
+  App.cola.alConfirmar("tramite", d => {
+    const s = App.state.solicitudes.find(x => x.folio === d.folio);
+    if (!s) return;
+    s.pendiente = false;
+    s.nota = d.costo ? "Pendiente de pago en el módulo de Pagos." : "Tu solicitud fue recibida y está en cola de procesamiento.";
+  });
 
   App.views.tramites = {
     titulo: "Trámites", migas: "Trámites",
@@ -68,7 +80,7 @@
         : s.solicitudes.length ? s.solicitudes.map(x => {
             const t = U.tramite(x.tramite), [txt, cls] = ESTADOS[x.estado];
             return `<div class="card req">
-              <div class="row-between"><div><h3 style="font-size:18px">${t.nombre}</h3><span class="mono small muted">Folio: ${x.folio} · ${U.fecha(x.fecha)}${x.destino ? " · " + U.esc(x.destino) : ""}</span></div><span class="badge ${cls}">${txt}</span></div>
+              <div class="row-between"><div><h3 style="font-size:18px">${t.nombre}</h3><span class="mono small muted">Folio: ${x.folio} · ${U.fecha(x.fecha)}${x.destino ? " · " + U.esc(x.destino) : ""}</span></div><span class="row" style="gap:6px">${x.pendiente ? U.pendiente() : ""}<span class="badge ${cls}">${txt}</span></span></div>
               <div class="steps">${ESTADOS.map(([n], i) => `${i ? `<span class="step-line ${x.estado >= i ? "done" : ""}"></span>` : ""}<span class="step ${x.estado > i || x.estado === 2 ? "done" : x.estado === i ? "current" : ""}"><i>${x.estado > i || x.estado === 2 ? "✓" : i + 1}</i><span>${n}</span></span>`).join("")}</div>
               <p class="small muted">${U.esc(x.nota)}</p>
               <div class="row">${x.estado === 2 ? `<button class="link" data-a="descargar" data-folio="${x.folio}">${I("download")} Ver documento</button>` : ""}

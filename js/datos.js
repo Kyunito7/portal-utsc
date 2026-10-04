@@ -82,51 +82,10 @@ window.App = window.App || {};
       { materia: "Educación Física IV", color: "#13a597", dia: 4, inicio: 7, dur: 2, aula: "Cancha Principal", docente: "Lic. Óscar Garza" }
     ],
 
-    noticias: [
-      { id: "n1", destacada: true, cat: "Institucional", fecha: "2026-09-17", min: 3, ico: "handshake", grad: ["#3c5a7a", "#1b1f2e"],
-        titulo: "UTSC firma convenio de colaboración con el Tecnológico de Monterrey",
-        resumen: "El convenio permitirá a los alumnos de la UTSC acceder a laboratorios especializados y programas de movilidad estudiantil durante el ciclo 2026-2027.",
-        cuerpo: ["La Universidad Tecnológica de Santa Catarina firmó un convenio bilateral con el Instituto Tecnológico y de Estudios Superiores de Monterrey que abre la puerta a intercambios académicos, uso compartido de laboratorios de IoT y realidad virtual, y co-dirección de proyectos de tesis.",
-          "El rector Dr. Arturo Medina Garza destacó que este acuerdo es el resultado de dos años de colaboración entre ambas instituciones y beneficiará a más de 1,200 alumnos de ingeniería.",
-          "Las primeras convocatorias de movilidad se publicarán en noviembre en la sección de Noticias del portal."] },
-      { id: "n2", cat: "Tecnología", fecha: "2026-09-15", min: 2, ico: "glasses", grad: ["#6d5df6", "#2a3050"],
-        titulo: "Nuevo laboratorio de realidad virtual para Ingeniería en Software",
-        resumen: "La sala cuenta con 12 estaciones equipadas con visores Meta Quest Pro y software de desarrollo XR, disponible para todas las carreras.",
-        cuerpo: ["El nuevo laboratorio XR, ubicado en el Edificio C, cuenta con 12 estaciones de trabajo con visores Meta Quest Pro, equipos con tarjeta gráfica dedicada y licencias de Unity y Unreal Engine.",
-          "Los alumnos pueden reservar horario a través de Laboratorios de Cómputo de lunes a viernes de 8:00 a 18:00."] },
-      { id: "n3", cat: "Deportes", fecha: "2026-09-14", min: 2, ico: "trophy", grad: ["#e5384c", "#7a1f2b"],
-        titulo: "UTSC campeón estatal de ajedrez universitario por tercer año consecutivo",
-        resumen: "El equipo representativo de ajedrez de la UTSC obtuvo el primer lugar en el Torneo Estatal de Universidades celebrado en Monterrey.",
-        cuerpo: ["El equipo, integrado por cinco alumnos de DSM, ISC e IIA, ganó 18 de sus 20 partidas en el Torneo Estatal de Universidades.",
-          "Con este resultado, la UTSC representará a Nuevo León en el nacional universitario que se celebrará en marzo."] },
-      { id: "n4", cat: "Académico", fecha: "2026-09-12", min: 1, ico: "graduation-cap", grad: ["#18a058", "#0d5a33"],
-        titulo: "Convocatoria abierta: Becas de excelencia académica 2026-B",
-        resumen: "Alumnos con promedio igual o superior a 9.0 y sin adeudos pueden solicitar la beca de excelencia que cubre hasta el 50% de la reinscripción.",
-        cuerpo: ["La beca de excelencia cubre hasta el 50% de la reinscripción del siguiente cuatrimestre.",
-          "Requisitos: promedio general igual o superior a 9.0, no tener adeudos y estar inscrito en el periodo actual. Las solicitudes se reciben en Servicios Escolares hasta el 30 de octubre."] },
-      { id: "n5", cat: "Cultura", fecha: "2026-09-10", min: 2, ico: "camera", grad: ["#b45cd6", "#4a2370"],
-        titulo: "Exposición fotográfica 'Campus Vivo' abierta hasta el 30 de octubre",
-        resumen: "La exposición reúne 60 fotografías tomadas por alumnos de todas las carreras que documentan la vida en el campus.",
-        cuerpo: ["La muestra está en el vestíbulo de la Biblioteca y puede visitarse de lunes a viernes de 8:00 a 19:00.",
-          "Las tres fotografías con más votos de la comunidad se imprimirán en gran formato para la entrada principal."] },
-      { id: "n6", cat: "Tecnología", fecha: "2026-09-08", min: 2, ico: "bot", grad: ["#2f6fe0", "#1b2f66"],
-        titulo: "Conferencia internacional: IA en la industria 4.0, transmisión en vivo",
-        resumen: "El Dr. Guillermo Fuentes del MIT ofrecerá una conferencia sobre automatización inteligente en manufactura.",
-        cuerpo: ["La conferencia se transmitirá en vivo desde el Aula Magna y por Moodle UTSC.",
-          "Los alumnos que asistan recibirán constancia de 2 horas de formación complementaria."] },
-      { id: "n7", cat: "Institucional", fecha: "2026-09-05", min: 1, ico: "landmark", grad: ["#e8781c", "#8a3f08"],
-        titulo: "Calendario de reinscripciones para el periodo Ene-Jun 2027",
-        resumen: "Servicios Escolares publicó las fechas de reinscripción por carrera y cuatrimestre.",
-        cuerpo: ["La reinscripción se realizará del 1 al 12 de diciembre a través del módulo de Pagos del portal.",
-          "Recuerda no tener adeudos de biblioteca ni de caja para poder reinscribirte."] }
-    ],
-
-    eventos: [
-      { fecha: "2026-10-14", titulo: "Conferencia: Ciberseguridad en apps modernas", lugar: "Aula Magna" },
-      { fecha: "2026-10-23", titulo: "Exposición de proyectos finales DSM", lugar: "Vestíbulo Edificio B" },
-      { fecha: "2026-11-06", titulo: "Feria de empleo y prácticas profesionales", lugar: "Explanada principal" },
-      { fecha: "2026-11-20", titulo: "Torneo interno de fútbol rápido", lugar: "Cancha Principal" }
-    ],
+    // Noticias y eventos ya no viven aquí: se descargan de data/noticias.json (semana 4)
+    // con la estrategia "stale-while-revalidate" del service worker. Ver js/contenido.js.
+    noticias: [],
+    eventos: [],
 
     alumnos: [
       ["Elisa Berenice Ovalle Sánchez", "27239", "DSM04AV", "DSM", 4],

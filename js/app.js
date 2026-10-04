@@ -84,11 +84,13 @@
     a.textContent = txt; a.hidden = !txt;
   }
   async function entrar(perfil, accion) {
-    App.iniciarSesion(perfil);
+    await App.iniciarSesion(perfil);
     App.registrar(accion);
     App.guardar();
     location.hash = "inicio";
     App.render(true);
+    await App.cola.contar();
+    App.cola.procesar();
   }
   function ocupado(form, si) {
     const b = form.querySelector("button[type=submit]");
@@ -199,6 +201,7 @@
     notif.setAttribute("aria-label", "Avisos" + (sinLeer ? ", " + sinLeer + " sin leer" : ""));
     $("#notif-dot").hidden = !sinLeer;
     $("#notif-dot").textContent = sinLeer;
+    App.cola.pintarChip();
 
     document.querySelectorAll("[data-shell=iniciales]").forEach(el => el.textContent = U.iniciales(U.nombreCompleto()));
     $("[data-shell=nombre-corto]").textContent = u.nombre.split(" ")[0];
@@ -309,6 +312,7 @@
     if (dd && !dd.hidden && !e.target.closest("#dropdown")) dd.hidden = true;
     if (e.target.closest("#menu-toggle")) { const n = document.getElementById("mainnav"); n.classList.toggle("open"); e.target.closest("#menu-toggle").setAttribute("aria-expanded", String(n.classList.contains("open"))); return; }
     if (e.target.closest("#btn-notif")) { App.menu.avisos(); return; }
+    if (e.target.closest("#chip-cola")) { App.cola.mostrar(); return; }
     const el = e.target.closest("[data-a]");
     if (!el) return;
     const nombre = el.dataset.a;
@@ -341,8 +345,10 @@
   window.addEventListener("hashchange", () => App.render());
 
   App.arrancar = async function () {
-    await App.cargar();
+    // Las noticias (data/noticias.json) y la sesión se cargan al mismo tiempo.
+    await Promise.all([App.cargar(), App.contenido.cargar()]);
     App.render(true);
+    if (App.sesion) { await App.cola.contar(); App.cola.procesar(); }
   };
 })();
 

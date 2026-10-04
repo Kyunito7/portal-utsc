@@ -1,4 +1,4 @@
-/* Cuentas de usuario guardadas en el navegador (IndexedDB).
+/* Cuentas de usuario guardadas en el navegador (IndexedDB, tabla "cuentas" de js/bd.js).
    - Cada cuenta se guarda con su correo como llave.
    - La contraseña NUNCA se guarda: se guarda un hash PBKDF2 con una "sal" aleatoria.
    - Más adelante esto se puede cambiar por Supabase sin tocar las pantallas:
@@ -6,34 +6,15 @@
 window.App = window.App || {};
 
 (function () {
-  const BD = "utsc-portal", VERSION = 1, TABLA = "cuentas";
+  const TABLA = "cuentas";
   let bd = null;
   const memoria = new Map(); // respaldo si el navegador no permite IndexedDB (modo incógnito estricto)
 
-  function abrir() {
-    if (bd) return Promise.resolve(bd);
-    return new Promise(resolve => {
-      let req;
-      try { req = indexedDB.open(BD, VERSION); } catch (e) { return resolve(null); }
-      req.onupgradeneeded = () => {
-        const tabla = req.result.createObjectStore(TABLA, { keyPath: "correo" });
-        tabla.createIndex("matricula", "matricula", { unique: true });
-      };
-      req.onsuccess = () => { bd = req.result; resolve(bd); };
-      req.onerror = () => resolve(null);
-    });
-  }
-
-  // Ejecuta una operación sobre la tabla y devuelve una promesa.
+  // La base se abre en js/bd.js (ahí se crean todas las tablas).
   async function operar(modo, fn) {
-    const base = await abrir();
-    if (!base) return fn(null);
-    return new Promise((resolve, reject) => {
-      const tx = base.transaction(TABLA, modo);
-      const req = fn(tx.objectStore(TABLA));
-      tx.oncomplete = () => resolve(req && req.result);
-      tx.onerror = () => reject(tx.error);
-    });
+    bd = await App.bd.abrir();
+    if (!bd) return fn(null);
+    return App.bd.operar(TABLA, modo, fn);
   }
 
   // ---------- Contraseñas ----------

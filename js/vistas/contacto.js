@@ -2,6 +2,11 @@
 (function () {
   const U = App.util;
 
+  App.cola.alConfirmar("mensaje", d => {
+    const dep = U.depto(d.depto);
+    App.notificar("Contacto", dep.nombre + " recibió tu mensaje (" + d.folio + "). Te responderá a " + App.state.usuario.correo + ".", "contacto");
+  });
+
   App.views.contacto = {
     titulo: "Contacto",
     render() {
@@ -40,10 +45,16 @@
         if (!ok) return;
         const d = U.depto(f.depto.value);
         const folio = "MSG-" + Date.now().toString().slice(-6);
-        App.registrar("Enviaste un mensaje a " + d.nombre + ": «" + f.asunto.value.trim() + "»");
-        App.notificar("Contacto", d.nombre + " recibió tu mensaje (" + folio + "). Te responderá a " + App.state.usuario.correo + ".", "contacto");
+        const asunto = f.asunto.value.trim();
+        App.registrar("Enviaste un mensaje a " + d.nombre + ": «" + asunto + "»");
         App.guardar();
-        App.exito(I("mail"), "Mensaje enviado", `<b>${d.nombre}</b> recibió tu mensaje con folio <span class="mono">${folio}</span>. La respuesta llegará a tu correo institucional en 24 a 48 horas hábiles.`, "Aceptar", () => App.render());
+        // Semana 4: el mensaje pasa por la cola; el aviso de "recibido" llega cuando el servidor confirma.
+        App.cola.agregar("mensaje", { folio, depto: d.id, asunto, mensaje: f.mensaje.value.trim() }, "Mensaje a " + d.nombre + ": «" + asunto + "»");
+        if (navigator.onLine) {
+          App.exito(I("mail"), "Mensaje enviado", `<b>${d.nombre}</b> recibió tu mensaje con folio <span class="mono">${folio}</span>. La respuesta llegará a tu correo institucional en 24 a 48 horas hábiles.`, "Aceptar", () => App.render());
+        } else {
+          App.exito(I("cloud-off"), "Mensaje guardado", `No hay conexión, pero tu mensaje para <b>${d.nombre}</b> (folio <span class="mono">${folio}</span>) quedó guardado y se enviará solo en cuanto vuelva el internet.`, "Entendido", () => App.render());
+        }
         f.reset();
       }
     }

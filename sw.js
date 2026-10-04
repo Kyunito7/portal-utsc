@@ -1,5 +1,6 @@
 /* =====================================================================
-   Service worker del Portal UTSC (semana 3: service worker y caché)
+   Service worker del Portal UTSC
+   (semana 3: service worker y caché · semana 4: datos offline y estrategias)
 
    Qué hace:
    1. INSTALACIÓN: guarda en caché el "app shell" (HTML, CSS, JS, fuentes,
@@ -10,17 +11,25 @@
       - Archivos del app shell ...... caché primero (son los que precargamos).
       - Imágenes nuevas ............. caché primero y se guardan al pedirlas
                                       (máximo 60 para no llenar el teléfono).
+      - Contenido (data/*.json) ..... stale-while-revalidate: responde con la
+                                      copia guardada al instante y en segundo
+                                      plano descarga la nueva; si cambió, avisa.
+      - /api/ (pagos, etc.) ......... solo red: nunca se guarda en caché.
       - Lo demás del mismo sitio .... red primero; si falla, caché.
       - Otros sitios (IEEE, Moodle…) no se tocan.
 
    IMPORTANTE: cada vez que cambies un archivo del proyecto, sube VERSION.
    Así el navegador detecta el service worker nuevo y aparece el aviso
    "Hay una versión nueva" en el portal.
+   4. SYNC (Background Sync): cuando vuelve la conexión, le pide a la página
+      que envíe la cola de acciones pendientes (ver js/sync.js).
    ===================================================================== */
 
-const VERSION = "v1.4.0";
+const VERSION = "v1.5.0";
 const CACHE_SHELL = `utsc-shell-${VERSION}`;
 const CACHE_IMAGENES = "utsc-imagenes";      // se conserva entre versiones
+const CACHE_DATOS = "utsc-datos";            // contenido (noticias/eventos), se conserva entre versiones
+const DATOS = ["./data/noticias.json"];
 const MAX_IMAGENES = 60;
 
 // Todo lo que necesita el portal para funcionar sin conexión.
@@ -31,8 +40,11 @@ const APP_SHELL = [
   "./css/app.css",
   "./js/iconos.js",
   "./js/datos.js",
+  "./js/bd.js",
   "./js/cuentas.js",
   "./js/nucleo.js",
+  "./js/contenido.js",
+  "./js/sync.js",
   "./js/menu-usuario.js",
   "./js/vistas/inicio.js",
   "./js/vistas/blog.js",
@@ -64,9 +76,14 @@ const APP_SHELL = [
 // ---------- 1. Instalación: precarga del app shell ----------
 self.addEventListener("install", evento => {
   evento.waitUntil(
-    caches.open(CACHE_SHELL)
-      // { cache: "reload" } evita que se guarde una copia vieja del caché HTTP
-      .then(cache => cache.addAll(APP_SHELL.map(url => new Request(url, { cache: "reload" }))))
+    Promise.all([
+      caches.open(CACHE_SHELL)
+        // { cache: "reload" } evita que se guarde una copia vieja del caché HTTP
+        .then(cache => cache.addAll(APP_SHELL.map(url => new Request(url, { cache: "reload" })))),
+      // Las noticias también quedan listas desde la instalación.
+      caches.open(CACHE_DATOS)
+        .then(cache => cache.addAll(DATOS.map(url => new Request(url, { cache: "reload" }))))
+    ])
   );
   // No se activa solo: espera a que el usuario acepte la actualización (ver pwa.js).
 });
@@ -94,8 +111,11 @@ self.addEventListener("fetch", evento => {
   if (req.method !== "GET") return;                       // POST, etc. van directo a la red
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;        // otros sitios: sin tocar
+  if (url.pathname.includes("/api/")) return;             // solo red: pagos y datos en vivo
 
-  if (req.mode === "navigate") {
+  if (url.pathname.includes("/data/")) {
+    evento.respondWith(staleWhileRevalidate(evento));
+  } else if (req.mode === "navigate") {
     evento.respondWith(redPrimeroPagina(req));
   } else if (req.destination === "image") {
     evento.respondWith(cachePrimeroImagen(req));
@@ -154,3 +174,41 @@ async function recortar(cache, maximo) {
   const llaves = await cache.keys();
   for (let i = 0; i < llaves.length - maximo; i++) await cache.delete(llaves[i]);
 }
+
+// Contenido: responde con lo guardado (rápido, funciona offline) y lo actualiza en segundo plano.
+async function staleWhileRevalidate(evento) {
+  const req = evento.request;
+  const cache = await caches.open(CACHE_DATOS);
+  const guardado = await cache.match(req, { ignoreSearch: true });
+  const textoViejo = guardado ? guardado.clone().text() : Promise.resolve(null);
+
+  const actualizar = fetch(req, { cache: "no-cache" }).then(async resp => {
+    if (!resp.ok) return resp;
+    const nuevo = await resp.clone().text();
+    const viejo = await textoViejo;
+    await cache.put(req, resp.clone());
+    if (viejo !== null && viejo !== nuevo) avisarClientes({ tipo: "CONTENIDO_ACTUALIZADO", url: req.url });
+    return resp;
+  }).catch(() => null);
+
+  if (guardado) {
+    evento.waitUntil(actualizar);                 // el SW sigue vivo hasta terminar de actualizar
+    const headers = new Headers(guardado.headers);
+    headers.set("X-Desde-Cache", "1");
+    return new Response(guardado.body, { status: guardado.status, statusText: guardado.statusText, headers });
+  }
+  return (await actualizar) || new Response('{"noticias":[],"eventos":[]}',
+    { status: 503, headers: { "Content-Type": "application/json" } });
+}
+
+async function avisarClientes(mensaje) {
+  const clientes = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+  clientes.forEach(c => c.postMessage(mensaje));
+}
+
+// ---------- 4. Background Sync ----------
+// js/sync.js registra la etiqueta "utsc-cola" cuando guarda algo sin conexión.
+// El navegador dispara este evento cuando vuelve la red (aunque la pestaña esté en segundo plano).
+self.addEventListener("sync", evento => {
+  if (evento.tag === "utsc-cola") evento.waitUntil(avisarClientes({ tipo: "SINCRONIZAR" }));
+});

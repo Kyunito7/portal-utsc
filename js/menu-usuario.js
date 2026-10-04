@@ -87,10 +87,13 @@
         <div class="action-row" style="color:var(--teal);font-weight:600">${I("mail")} ${u.correo} ✓ verificado</div>
         <div class="section-label">Uso sin conexión</div>
         <div class="action-row" id="pwa-estado" style="cursor:default">${I("wifi")} Revisando…</div>
+        <div class="action-row" id="datos-estado" style="cursor:default">${I("database")} Revisando datos guardados…</div>
+        <button type="button" class="action-row" data-m="pendientes">${I("cloud-upload")} Pendientes de enviar <b class="mono" id="cfg-cola" style="margin-left:auto">${App.cola.cuantos}</b></button>
         <button type="button" class="action-row" data-m="reset">${I("rotate-ccw")} Restablecer datos de ejemplo</button>
         <button class="btn btn-dark btn-block" type="submit">Guardar y cerrar</button>
       </div></form>`, { acciones: {
         pass: () => M.cambiarPassword(),
+        pendientes: () => { App.cerrarModal(true); App.cola.mostrar(); },
         reset: () => App.confirmar("Restablecer datos", "Se borrarán tus publicaciones, pagos, trámites y viajes de prueba y se cargarán los datos de ejemplo originales.", "Restablecer", () => {
           App.restablecer(); App.render(); App.toast("Datos de ejemplo restablecidos");
         }, true),
@@ -108,6 +111,17 @@
           : `${I("wifi-off")} <span>Aún no está listo para usarse sin internet. Recarga la página una vez con conexión.</span>`;
       }).catch(() => { caja.textContent = "No se pudo revisar el caché."; });
     } else if (caja) caja.textContent = "Tu navegador no permite usar el portal sin conexión.";
+
+    // Datos guardados en IndexedDB y almacenamiento persistente (semana 4)
+    const datos = document.getElementById("datos-estado");
+    (async () => {
+      const bd = await App.bd.disponible();
+      const persistente = navigator.storage && navigator.storage.persisted ? await navigator.storage.persisted() : false;
+      if (!datos.isConnected) return;
+      datos.innerHTML = bd
+        ? `${I("database")} <span>Tus datos están en IndexedDB${persistente ? " con <b>almacenamiento persistente</b> (el navegador no los borrará)" : " · el navegador podría borrarlos si se queda sin espacio"}</span>`
+        : `${I("triangle-alert")} <span>Este navegador no permite IndexedDB (¿modo incógnito?). Tus datos se guardan de forma temporal.</span>`;
+    })();
   };
 
   M.cambiarPassword = function () {
@@ -158,7 +172,7 @@
           "Se borrará tu cuenta del portal y todos tus datos (publicaciones, viajes, préstamos de prueba). Esta acción no se puede deshacer.",
           "Eliminar cuenta", async () => {
             const correo = App.state.usuario.correo;
-            await App.cuentas.eliminar(correo); App.borrarDatos(correo);
+            await App.cuentas.eliminar(correo); await App.borrarDatos(correo);
             App.cerrarSesion(); location.hash = ""; App.render(true); App.toast("Tu cuenta se eliminó");
           }, true),
         guardar: f => {

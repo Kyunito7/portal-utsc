@@ -16,7 +16,17 @@
     return "REF-" + new Date().getFullYear() + "-" + String(Date.now()).slice(-4) + String(n).padStart(2, "0");
   }
 
+  // Semana 4: los pagos son "solo red". Nunca se guardan para después, porque
+  // un cobro repetido o con datos viejos sería un problema real.
+  function sinConexion() {
+    App.modal(`<div class="modal-head row">${I("wifi-off")}<h2>Necesitas conexión para pagar</h2></div>
+      <div class="modal-body"><p class="muted">Por seguridad, los pagos no se guardan para enviarse después. Conéctate a internet y vuelve a intentarlo.
+      Mientras tanto puedes revisar tus cargos y comprobantes, que sí funcionan sin conexión.</p></div>
+      <div class="modal-foot"><button class="btn btn-dark" data-m="cerrar">Entendido</button></div>`);
+  }
+
   function pagar(cargo) {
+    if (!navigator.onLine) return sinConexion();
     App.modal(`<div class="modal-head"><h2>Pagar ${U.esc(cargo.concepto)}</h2><p class="small muted">Total a pagar: <b class="c-orange">${U.dinero(cargo.monto)} MXN</b></p></div>
       <form data-m="pagar" novalidate><div class="modal-body">
         <div class="field"><span class="label">Método de pago</span>
@@ -42,6 +52,7 @@
           modal.querySelector("#pago-ref").hidden = t;
         },
         pagar: f => {
+          if (!navigator.onLine) { App.cerrarModal(true); return sinConexion(); }
           const metodo = f.metodo.value;
           if (metodo === "tarjeta") {
             const ok = App.validar(f, {

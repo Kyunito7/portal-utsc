@@ -1,9 +1,10 @@
-/* Núcleo: guardado de datos, utilidades, ventanas modales y avisos. */
+/* Núcleo: guardado de datos, utilidades, ventanas modales y avisos.
+   Semana 4: los datos de cada alumno se guardan en IndexedDB (tabla "estado", ver bd.js).
+   localStorage solo guarda el correo de la sesión (es pequeño y se lee al instante). */
 (function () {
-  const CLAVE_SESION = "utsc-portal-sesion";      // guarda el correo de quien inició sesión
-  const claveDatos = correo => "utsc-portal-v3:" + correo; // datos de cada cuenta por separado
+  const CLAVE_SESION = "utsc-portal-sesion";       // guarda el correo de quien inició sesión
+  const claveVieja = correo => "utsc-portal-v3:" + correo; // donde se guardaba antes (semanas 2-3)
 
-  // ---------- Guardado (localStorage) ----------
   function leer(clave) {
     try { return localStorage.getItem(clave); } catch (e) { return null; }
   }
@@ -23,39 +24,80 @@
     if (!correo) return;
     const perfil = await App.cuentas.obtener(correo);
     if (!perfil) { escribir(CLAVE_SESION, null); return; }
-    App.abrirDatos(perfil);
+    await App.abrirDatos(perfil);
     App.sesion = true;
   };
-  // Lee los datos de una cuenta; si es nueva, crea sus datos de ejemplo.
-  App.abrirDatos = function (perfil) {
+
+  // Lee los datos de una cuenta desde IndexedDB; si es nueva, crea sus datos de ejemplo.
+  App.abrirDatos = async function (perfil) {
     let estado = null;
-    try { estado = JSON.parse(leer(claveDatos(perfil.correo)) || "null"); } catch (e) { estado = null; }
+    try { estado = await App.bd.leer("estado", perfil.correo); } catch (e) { estado = null; }
+    if (estado) delete estado.correo;
+    // Migración: si venía de la versión anterior (localStorage), se mueve a IndexedDB.
+    if (!estado) {
+      try { estado = JSON.parse(leer(claveVieja(perfil.correo)) || "null"); } catch (e) { estado = null; }
+    }
     if (!estado || estado.version !== 3) estado = App.crearEstadoInicial(perfil);
     Object.assign(estado.usuario, perfil); // el perfil de la cuenta manda
     App.state = estado;
-    App.guardar();
+    await App.guardarYa();
+    escribir(claveVieja(perfil.correo), null);
   };
+
+  // Guardar: se agrupan los cambios seguidos (por ejemplo, varios "me gusta") en una sola escritura.
+  let pendiente = null;
   App.guardar = function () {
     if (!App.state) return;
-    const clave = claveDatos(App.state.usuario.correo);
+    clearTimeout(pendiente);
+    pendiente = setTimeout(App.guardarYa, 250);
+  };
+  App.guardarYa = async function () {
+    clearTimeout(pendiente); pendiente = null;
+    if (!App.state) return;
+    const registro = Object.assign({ correo: App.state.usuario.correo }, App.state);
+    try {
+      if (await App.bd.disponible()) { await App.bd.guardar("estado", registro); return; }
+    } catch (e) { console.warn("IndexedDB no pudo guardar:", e); }
+    // Respaldo (incógnito estricto): localStorage, sin imágenes si no caben.
+    const clave = claveVieja(registro.correo);
     if (!escribir(clave, JSON.stringify(App.state))) {
-      // Si la imagen de una publicación llena el almacenamiento, se guarda sin imágenes.
       const copia = JSON.parse(JSON.stringify(App.state));
       copia.posts.forEach(p => { if (p.imagen) p.imagen = null; });
       escribir(clave, JSON.stringify(copia));
     }
   };
-  App.iniciarSesion = function (perfil) {
-    App.abrirDatos(perfil);
+  // Si cierras la pestaña justo después de un cambio, se guarda en ese momento.
+  window.addEventListener("pagehide", () => { if (pendiente) App.guardarYa(); });
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden" && pendiente) App.guardarYa(); });
+
+  App.iniciarSesion = async function (perfil) {
+    await App.abrirDatos(perfil);
     App.sesion = true;
     escribir(CLAVE_SESION, perfil.correo);
+    App.pedirAlmacenamientoPersistente();
   };
-  App.cerrarSesion = function () { App.sesion = false; escribir(CLAVE_SESION, null); };
-  App.borrarDatos = function (correo) { escribir(claveDatos(correo), null); };
+  App.cerrarSesion = function () {
+    if (pendiente) App.guardarYa();
+    App.sesion = false; escribir(CLAVE_SESION, null);
+  };
+  App.borrarDatos = async function (correo) {
+    escribir(claveVieja(correo), null);
+    try {
+      await App.bd.borrar("estado", correo);
+      const cola = (await App.bd.todos("cola", "correo", correo)) || [];
+      for (const a of cola) await App.bd.borrar("cola", a.id);
+    } catch (e) { /* sin IndexedDB no hay nada que borrar */ }
+  };
   App.restablecer = function () {
     const perfil = App.state.usuario;
     App.state = App.crearEstadoInicial(perfil);
     App.guardar();
+  };
+
+  // Pide al navegador que no borre los datos del portal aunque falte espacio.
+  App.pedirAlmacenamientoPersistente = async function () {
+    if (!navigator.storage || !navigator.storage.persist) return false;
+    try { return (await navigator.storage.persisted()) || (await navigator.storage.persist()); } catch (e) { return false; }
   };
   App.registrar = function (txt) {
     App.state.actividad.unshift({ t: Date.now(), txt });
@@ -107,6 +149,8 @@
   U.portada = function (p, extra) {
     return `<div class="cover ${extra || ""}" style="background:linear-gradient(135deg,${p.grad[0]},${p.grad[1]})"><span aria-hidden="true">${I(p.ico)}</span></div>`;
   };
+  // Etiqueta para lo que se hizo sin conexión y aún no llega al servidor (semana 4).
+  U.pendiente = () => `<span class="badge b-pendiente" title="Se enviará cuando haya conexión">${I("clock")} ${navigator.onLine ? "Enviando…" : "Pendiente de enviar"}</span>`;
   U.carrera = clave => (App.CATALOGO.carreras.find(c => c.clave === clave) || {}).nombre || clave;
   U.depto = id => App.CATALOGO.departamentos.find(d => d.id === id);
   U.tramite = id => App.CATALOGO.tramites.find(t => t.id === id);

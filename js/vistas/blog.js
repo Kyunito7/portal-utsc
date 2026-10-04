@@ -35,7 +35,7 @@
       <div class="post-body">
         <div class="row-between"><div class="row"><span class="avatar">${U.iniciales(p.autor)}</span>
           <div><b style="display:block;font-size:14px">${U.esc(p.autor)}</b><span class="mono small muted">${mostrarMat ? p.matricula + " · " : ""}${U.hace(p.t)}</span></div></div>
-          <span class="badge ${U.claseCategoria(p.cat)}">${p.cat}</span></div>
+          <span class="row" style="gap:6px">${p.pendiente ? App.util.pendiente() : ""}<span class="badge ${U.claseCategoria(p.cat)}">${p.cat}</span></span></div>
         <h3>${U.esc(p.titulo)}</h3>
         <p style="white-space:pre-line">${textoConTags(p.texto)}</p>
         <div class="post-foot">
@@ -46,10 +46,21 @@
             : p.reportado ? `<span class="small muted">${I("flag")} Reportada</span>` : `<button class="react-btn" data-a="reportar" data-id="${p.id}">${I("flag")} Reportar</button>`}
         </div>
         ${abierto ? `<div class="comments">${p.comentarios.map(c => `<div class="comment"><span class="avatar avatar-sm">${U.iniciales(c.autor)}</span>
-            <div class="grow"><b>${U.esc(c.autor)}</b> <span class="small muted">${U.hace(c.t)}</span><p class="small">${U.esc(c.txt)}</p></div></div>`).join("")}</div>` : ""}
+            <div class="grow"><b>${U.esc(c.autor)}</b> <span class="small muted">${c.pendiente ? I("clock") + " Pendiente de enviar" : U.hace(c.t)}</span><p class="small">${U.esc(c.txt)}</p></div></div>`).join("")}</div>` : ""}
         <form class="comment-form" data-f="comentario" data-id="${p.id}"><label class="grow"><span hidden>Comentario</span><input class="input" name="txt" maxlength="300" placeholder="Escribe un comentario..." autocomplete="off"></label><button class="btn btn-teal">Enviar</button></form>
       </div></article>`;
   }
+
+  // Cuando el servidor confirma, se quita la marca de "pendiente".
+  App.cola.alConfirmar("publicacion", d => {
+    const p = App.state.posts.find(x => x.id === d.id);
+    if (p) { p.pendiente = false; p.t = Date.now(); }
+  });
+  App.cola.alConfirmar("comentario", d => {
+    const p = App.state.posts.find(x => x.id === d.post);
+    const c = p && p.comentarios.find(x => x.id === d.id);
+    if (c) { c.pendiente = false; c.t = Date.now(); }
+  });
 
   App.views.blog = {
     titulo: "Blog Estudiantil", nav: "blog", mod: "blog",
@@ -140,20 +151,26 @@
         if (!ok) return;
         const titulo = f.titulo.value.trim(), texto = f.texto.value.trim();
         if (moderar(titulo + " " + texto)) { App.toast("La moderación automática detectó lenguaje ofensivo. Edita tu publicación.", "error"); return; }
-        const u = App.state.usuario;
-        App.state.posts.unshift({ id: "p" + Date.now(), autor: U.nombreCompleto(), matricula: u.matricula, propio: true, cat: f.cat.value, t: Date.now(),
-          titulo, texto, imagen: local.imagen, portada: null, likes: 0, liked: false, reportado: false, comentarios: [] });
+        const u = App.state.usuario, id = "p" + Date.now();
+        // Semana 4: la publicación aparece al instante marcada como pendiente y se manda por la cola.
+        App.state.posts.unshift({ id, autor: U.nombreCompleto(), matricula: u.matricula, propio: true, cat: f.cat.value, t: Date.now(),
+          titulo, texto, imagen: local.imagen, portada: null, likes: 0, liked: false, reportado: false, comentarios: [], pendiente: true });
         local.imagen = null; local.cat = "Todos"; local.q = "";
-        App.registrar("Publicaste «" + titulo + "» en el blog"); App.guardar(); App.render(); App.toast("Publicación publicada");
+        App.registrar("Publicaste «" + titulo + "» en el blog"); App.guardar(); App.render();
+        App.cola.agregar("publicacion", { id, titulo, texto, cat: f.cat.value }, "Publicación «" + titulo + "»");
+        App.toast(navigator.onLine ? "Publicando…" : "Sin conexión: tu publicación se enviará cuando vuelva el internet");
       },
       comentario(f) {
         const txt = f.txt.value.trim();
         if (!txt) { f.txt.focus(); return; }
         if (moderar(txt)) { App.toast("Tu comentario tiene lenguaje ofensivo y no se publicó.", "error"); return; }
         const p = App.state.posts.find(x => x.id === f.dataset.id);
-        p.comentarios.push({ autor: U.nombreCompleto(), txt, t: Date.now() });
+        const id = "c" + Date.now();
+        p.comentarios.push({ id, autor: U.nombreCompleto(), txt, t: Date.now(), pendiente: true });
         local.abiertos[p.id] = true;
         App.guardar(); App.refrescar("lista");
+        App.cola.agregar("comentario", { post: p.id, id, txt }, "Comentario en «" + p.titulo + "»");
+        if (!navigator.onLine) App.toast("Sin conexión: tu comentario se enviará después");
       }
     }
   };
