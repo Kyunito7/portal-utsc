@@ -3,11 +3,12 @@
    - cuentas : perfiles de usuario y hash de contraseña (llave: correo)
    - estado  : datos de cada alumno: publicaciones, pagos, trámites, viajes… (llave: correo)
    - cola    : acciones hechas sin conexión que faltan por enviar (llave: id)
+   - comunidad : blog compartido, avisos entre usuarios y bitácora de moderación (llave: id)
    IndexedDB guarda mucho más que localStorage, acepta imágenes y no bloquea la página. */
 window.App = window.App || {};
 
 (function () {
-  const NOMBRE = "utsc-portal", VERSION = 2;
+  const NOMBRE = "utsc-portal", VERSION = 3;
   let conexion = null, abriendo = null;
 
   App.bd = {
@@ -25,6 +26,8 @@ window.App = window.App || {};
           }
           if (!db.objectStoreNames.contains("estado")) db.createObjectStore("estado", { keyPath: "correo" });
           if (!db.objectStoreNames.contains("cola")) db.createObjectStore("cola", { keyPath: "id" }).createIndex("correo", "correo");
+          // v3: blog compartido entre cuentas, avisos entre usuarios y bitácora de moderación.
+          if (!db.objectStoreNames.contains("comunidad")) db.createObjectStore("comunidad", { keyPath: "id" });
         };
         req.onsuccess = () => {
           conexion = req.result;

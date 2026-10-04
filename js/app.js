@@ -1,7 +1,7 @@
 /* Aplicación: inicio de sesión, encabezado, menús, navegación entre secciones. */
 (function () {
   const U = App.util;
-  const RUTAS = ["inicio", "blog", "noticias", "directorio", "contacto", "kardex", "horarios", "pagos", "tramites", "biblioteca", "driver"];
+  const RUTAS = ["inicio", "blog", "noticias", "directorio", "contacto", "kardex", "horarios", "pagos", "tramites", "biblioteca", "driver", "moderacion"];
   App.params = {};
 
   App.ruta = function () {
@@ -18,6 +18,9 @@
   const CORREO_OK = /^[a-z0-9]+([._-][a-z0-9]+)*@utsc\.edu\.mx$/i;
   const DEMO = { nombre: "Alumno", apellidos: "de Prueba", matricula: "00000", carrera: "DSM", semestre: 4, grupo: "DSM04AV", correo: "demo@utsc.edu.mx" };
   const DEMO_PASS = "demo2026";
+  // Cuenta de prueba con rol de moderador (para probar el panel de moderación).
+  const DEMO_MOD = { nombre: "Laura", apellidos: "Moderadora de Prueba", matricula: "90001", carrera: "DSM", semestre: 10, grupo: "MODERACION", correo: "moderador@utsc.edu.mx", rol: "Moderador" };
+  const DEMO_MOD_PASS = "modera2026";
   let modoLogin = "entrar";
 
   function campoPass(id, nombre, auto, placeholder) {
@@ -34,7 +37,8 @@
       <button class="btn btn-primary btn-lg btn-block" type="submit">Entrar al portal</button>
       <p class="login-switch">¿Aún no tienes cuenta? <button type="button" class="link" data-modo="crear">Crear cuenta</button></p>
       <div class="login-hint">¿Solo quieres conocer el portal? Entra con la cuenta de prueba: <b class="mono">demo@utsc.edu.mx</b> / <b class="mono">demo2026</b>.
-        <button type="button" class="btn btn-outline btn-block" id="demo" style="margin-top:10px">Entrar con la cuenta de prueba</button></div>
+        <button type="button" class="btn btn-outline btn-block" id="demo" style="margin-top:10px">Entrar con la cuenta de prueba</button>
+        <button type="button" class="link" id="demo-mod" style="margin-top:8px">${I("shield-check")} Entrar como moderador de prueba</button></div>
     </form>`;
   }
 
@@ -129,13 +133,15 @@
           entrar(perfil, "Iniciaste sesión");
         } catch (err) { ocupado(fLogin, false); alerta(root, err.message); }
       });
-      root.querySelector("#demo").addEventListener("click", async () => {
+      const demo = (datos, pass, accion) => async () => {
         try {
-          let perfil = await App.cuentas.verificar(DEMO.correo, DEMO_PASS);
-          if (!perfil) perfil = await App.cuentas.crear(DEMO, DEMO_PASS);
-          entrar(perfil, "Entraste con la cuenta de prueba");
+          let perfil = await App.cuentas.verificar(datos.correo, pass);
+          if (!perfil) perfil = await App.cuentas.crear(datos, pass);
+          entrar(perfil, accion);
         } catch (err) { alerta(root, err.message); }
-      });
+      };
+      root.querySelector("#demo").addEventListener("click", demo(DEMO, DEMO_PASS, "Entraste con la cuenta de prueba"));
+      root.querySelector("#demo-mod").addEventListener("click", demo(DEMO_MOD, DEMO_MOD_PASS, "Entraste como moderador"));
     }
 
     const fCrear = root.querySelector("#form-crear");
@@ -210,6 +216,10 @@
     $("[data-shell=correo]").textContent = u.correo;
     $("[data-shell=promedio]").textContent = "Promedio: " + App.academico().promedio.toFixed(1);
     $("[data-shell=grupo]").textContent = u.grupo;
+    // Opciones solo para moderadores
+    const esMod = App.moderacion.esModerador(), porRevisar = esMod ? App.comunidad.cuantosPendientes() : 0;
+    document.querySelectorAll("[data-solo-mod]").forEach(el => el.hidden = !esMod);
+    const cMod = $("#dd-mod-count"); if (cMod) { cMod.textContent = porRevisar; cMod.hidden = !porRevisar; }
     $("#dropdown").hidden = true;
 
     const migas = $("#migas");

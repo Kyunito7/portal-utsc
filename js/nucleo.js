@@ -40,6 +40,7 @@
     if (!estado || estado.version !== 3) estado = App.crearEstadoInicial(perfil);
     Object.assign(estado.usuario, perfil); // el perfil de la cuenta manda
     App.state = estado;
+    if (App.comunidad) await App.comunidad.cargar();   // blog compartido (moderación)
     await App.guardarYa();
     escribir(claveVieja(perfil.correo), null);
   };
@@ -50,6 +51,7 @@
     if (!App.state) return;
     clearTimeout(pendiente);
     pendiente = setTimeout(App.guardarYa, 250);
+    if (App.comunidad && App.comunidad.listo) App.comunidad.guardar();
   };
   App.guardarYa = async function () {
     clearTimeout(pendiente); pendiente = null;
@@ -62,7 +64,7 @@
     const clave = claveVieja(registro.correo);
     if (!escribir(clave, JSON.stringify(App.state))) {
       const copia = JSON.parse(JSON.stringify(App.state));
-      copia.posts.forEach(p => { if (p.imagen) p.imagen = null; });
+      (copia.posts || []).forEach(p => { if (p.imagen) p.imagen = null; });
       escribir(clave, JSON.stringify(copia));
     }
   };
@@ -78,6 +80,7 @@
   };
   App.cerrarSesion = function () {
     if (pendiente) App.guardarYa();
+    if (App.comunidad && App.comunidad.listo) App.comunidad.guardarYa();
     App.sesion = false; escribir(CLAVE_SESION, null);
   };
   App.borrarDatos = async function (correo) {

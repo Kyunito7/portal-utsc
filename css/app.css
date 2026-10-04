@@ -778,3 +778,40 @@ html { scroll-behavior: smooth; }
 #datos-estado .i { color: var(--blue); margin-top: 2px; }
 @media (prefers-reduced-motion: reduce) { .b-pendiente { animation: none; } }
 .toasts { pointer-events: none; }
+
+/* ---------- Moderación ---------- */
+.c-red { color: var(--red); }
+.c-yellow { color: var(--yellow-ink); }
+.c-red .i, .c-yellow .i { width: 13px; height: 13px; vertical-align: -2px; }
+.post-revision { border: 1.5px dashed #e8c76a; }
+.mod-nota, .mod-bloqueo { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 12px; font-size: 13.5px;
+  background: var(--yellow-soft); color: var(--yellow-ink); }
+.mod-nota .i, .mod-bloqueo .i { flex: none; width: 18px; height: 18px; margin-top: 1px; }
+.mod-nota.rechazo, .mod-bloqueo { background: var(--red-soft); color: var(--red); }
+.mod-bloqueo { animation: aparecer .3s var(--resorte); }
+.comment.en-revision { opacity: .75; }
+.radio-list { display: grid; gap: 8px; margin-top: 6px; }
+.radio-list label { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; cursor: pointer; font-size: 14px; transition: border-color .2s, background .2s; }
+.radio-list label:has(input:checked) { border-color: var(--orange); background: var(--orange-soft); }
+.radio-list input { accent-color: var(--orange); }
+.mod-acceso { display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; border: 1.5px solid var(--teal-soft); }
+.mod-acceso > .i { width: 28px; height: 28px; color: var(--teal); flex: none; }
+.mod-acceso b { display: block; }
+.mod-encabezado { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 18px; }
+.mod-encabezado h1 { display: flex; align-items: center; gap: 10px; color: var(--white); }
+.mod-encabezado .stats { gap: 26px; }
+.mod-item { padding: 20px; display: grid; gap: 12px; }
+.mod-item.urgente { border-left: 4px solid var(--red); }
+.mod-item h3 { font-size: 18px; }
+.mod-texto { white-space: pre-line; background: var(--sand); padding: 12px 14px; border-radius: 12px; font-size: 14.5px; overflow-wrap: anywhere; }
+.mod-motivos { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.mod-motivos li { display: inline-flex; align-items: center; gap: 6px; background: var(--yellow-soft); color: var(--yellow-ink); padding: 4px 10px; border-radius: 99px; font-size: 12.5px; font-weight: 600; }
+.mod-motivos .i { width: 14px; height: 14px; }
+.mod-acciones { flex-wrap: wrap; gap: 10px; }
+.btn.danger { color: var(--red); }
+.mod-hist { display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.mod-hist:last-child { border-bottom: 0; }
+.mod-hist > .i { flex: none; margin-top: 2px; }
+.mod-hist.ok > .i { color: var(--green); }
+.mod-hist.no > .i { color: var(--red); }
+#dropdown .count { margin-left: auto; }

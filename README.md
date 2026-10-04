@@ -52,12 +52,12 @@ El portal funciona **sin internet** después de abrirlo una vez con conexión.
   - **Aviso de «Sin conexión»** y una línea amarilla en el encabezado mientras no hay internet.
   - En **Configuración → Uso sin conexión**: versión del caché, número de archivos guardados y espacio usado.
 
-**Cómo publicar un cambio:** después de modificar cualquier archivo, sube `VERSION` en `sw.js` (por ejemplo `v1.5.0` → `v1.5.1`). Si agregas un archivo nuevo, agrégalo también a la lista `APP_SHELL`.
+**Cómo publicar un cambio:** después de modificar cualquier archivo, sube `VERSION` en `sw.js` (por ejemplo `v1.6.0` → `v1.6.1`). Si agregas un archivo nuevo, agrégalo también a la lista `APP_SHELL`.
 
 **Cómo probarlo:**
 1. `python3 -m http.server 8000` y abre `http://localhost:8000` (el service worker solo funciona en `localhost` o `https`).
 2. Chrome → DevTools → **Application → Service workers**: debe aparecer `sw.js` como *activated and running*.
-3. **Application → Cache storage → utsc-shell-v1.5.0**: ahí están los archivos guardados.
+3. **Application → Cache storage → utsc-shell-v1.6.0**: ahí están los archivos guardados.
 4. En **Network** marca **Offline** y recarga: el portal sigue funcionando.
 
 ## Semana 4: Datos offline y estrategias
@@ -94,6 +94,25 @@ Ahora el portal no solo **abre** sin internet: también **guarda lo que haces** 
 | Pagos (`/api/`) | **Solo red** | Un cobro no se puede guardar para después: sin conexión aparece «Necesitas conexión para pagar» |
 
 **Cómo probarlo:** DevTools → **Network → Offline**, publica algo en el Blog y escribe a un departamento. Verás la etiqueta «Pendiente de enviar» y el indicador en el encabezado. En **Application → IndexedDB → utsc-portal → cola** están las acciones. Quita Offline y en un momento se envían solas.
+
+## Moderación del blog
+
+Como el blog no tiene supervisores las 24 horas, todo lo que se publica pasa por un **moderador automático** (`js/moderacion.js`) y lo dudoso espera a que un moderador lo revise.
+
+| Decisión | Cuándo | Qué pasa |
+|---|---|---|
+| **Aprobar** | Texto normal | Se publica para todos |
+| **Revisar** | Groserías leves, posibles amenazas, venta de respuestas, 2+ enlaces, casi todo en mayúsculas, números de teléfono, texto repetido | Solo lo ven su autor (con la etiqueta «En revisión») y los moderadores |
+| **Bloquear** | Insultos fuertes o discriminación | No se publica y se le explica al alumno por qué |
+
+- El filtro detecta trucos para saltarlo: `p3nd3j0`, `p u t o`, `peeendejooo`, acentos.
+- Las posibles amenazas se marcan como **urgentes** y salen primero.
+- Con **3 reportes** una publicación se oculta sola hasta que un moderador decida.
+- **Rol Moderador** con su **Panel de moderación** (`#moderacion`): pestañas *En revisión*, *Reportadas* e *Historial*. Al aprobar o rechazar, el autor recibe un aviso con el motivo.
+- Cuenta de prueba de moderador: `moderador@utsc.edu.mx` / `modera2026` (botón «Entrar como moderador de prueba»).
+- El blog ahora es **compartido** entre las cuentas del navegador (`js/comunidad.js`, tabla `comunidad` en IndexedDB): así el moderador ve lo que publican los alumnos. Simula al servidor.
+
+**IA para la entrega final:** `App.moderacion.revisar()` es el único punto que decide. Se cambiará por una llamada a una función de Supabase que consulte una IA. La clave de la IA va en el servidor, nunca en el JavaScript del portal. Las pantallas no cambian.
 
 ## Cuentas de usuario
 
@@ -140,6 +159,8 @@ js/cuentas.js           cuentas de usuario (hash de contraseña)
 js/nucleo.js            guardado, utilidades, modales, avisos
 js/contenido.js         descarga de noticias y eventos
 js/sync.js              cola de envío y sincronización
+js/moderacion.js        moderador automático (filtro; después IA)
+js/comunidad.js         blog compartido, avisos entre usuarios y bitácora
 js/menu-usuario.js      perfil, configuración, privacidad
 js/vistas/*.js          una vista por sección
 js/app.js               login, shell, rutas y render
@@ -149,7 +170,7 @@ fonts/                  Outfit, Fraunces y JetBrains Mono (licencia SIL OFL)
 docs/                   documentos entregables
 ```
 
-Cuenta de prueba: `demo@utsc.edu.mx` / `demo2026` (o usa el botón de la pantalla de inicio).
+Cuentas de prueba: alumno `demo@utsc.edu.mx` / `demo2026` y moderador `moderador@utsc.edu.mx` / `modera2026` (o usa los botones de la pantalla de inicio).
 
 ## Ramas
 

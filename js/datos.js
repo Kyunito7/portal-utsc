@@ -170,29 +170,6 @@ window.App = window.App || {};
         { id: "a3", mod: "Pagos", txt: "Tienes un pago pendiente: Reinscripción " + sem + "° Cuatrimestre, vence el 30 Oct.", t: ahora - DIA, leida: false, ir: "pagos" },
         { id: "a4", mod: "Noticias", txt: "Nueva noticia: UTSC firma convenio con el Tec de Monterrey.", t: ahora - 2 * DIA, leida: true, ir: "noticias" }
       ],
-      posts: [
-        { id: "p1", autor: "José Antonio Prado Segura", matricula: "27144", cat: "Académico", t: ahora - 2 * HORA,
-          titulo: "Resumen del parcial de Redes Neuronales",
-          texto: "Comparto mis apuntes del tercer parcial. Cubrimos backpropagation, funciones de activación y optimización con Adam. Si alguien quiere el PDF me escribe. Mucho ánimo para el examen del viernes. #RedesNeuronales #ExamenFinal",
-          portada: { ico: "brain", grad: ["#2a3050", "#8b5cf6"] }, likes: 34, liked: false, reportado: false,
-          comentarios: [
-            { autor: "Elisa Berenice Ovalle Sánchez", txt: "¡Gracias! Me sirvió mucho la parte de Adam.", t: ahora - 90 * 60 * 1000 },
-            { autor: "Paola Alejandra Vega Núñez", txt: "¿Incluye los ejercicios de la tarea 3?", t: ahora - 60 * 60 * 1000 }
-          ] },
-        { id: "p2", autor: "Elisa Berenice Ovalle Sánchez", matricula: "27239", cat: "Vida universitaria", t: ahora - 5 * HORA,
-          titulo: "Ganamos el hackathon inter-universitario HackNL 2026",
-          texto: "Nuestro equipo de DSM04AV ganó el primer lugar con una app para reportar baches en Santa Catarina. Gracias a todos los que nos apoyaron. #HackNL2026 #UTSC2026",
-          portada: { ico: "trophy", grad: ["#e8781c", "#1b1f2e"] }, likes: 58, liked: false, reportado: false,
-          comentarios: [{ autor: "Juan Francisco Sánchez Pérez", txt: "¡Felicidades, equipo!", t: ahora - 4 * HORA }] },
-        { id: "p3", autor: "Juan Francisco Sánchez Pérez", matricula: "26790", cat: "Recursos", t: ahora - 26 * HORA,
-          titulo: "Repositorio de ejercicios de Bases de Datos: 40 ejercicios SQL",
-          texto: "Armé una lista de 40 ejercicios de SQL con soluciones, desde SELECT básicos hasta subconsultas y JOINs. Ideal para repasar antes del examen. #ExamenFinal",
-          portada: null, likes: 21, liked: false, reportado: false, comentarios: [] },
-        { id: "p4", autor: "María Fernanda Quiroga Reyes", matricula: "26512", cat: "Eventos", t: ahora - 2 * DIA,
-          titulo: "Inscripciones abiertas al servicio social de verano",
-          texto: "Vinculación ya publicó las plazas de servicio social. Hay lugares en el DIF y en el municipio. #ServicioSocial",
-          portada: null, likes: 12, liked: false, reportado: false, comentarios: [] }
-      ],
       cargos: [
         { id: "c1", concepto: "Reinscripción " + sem + "° Cuatrimestre", monto: 1800, vence: "2026-10-30" },
         { id: "c2", concepto: "Seguro escolar 2026-B", monto: 450, vence: "2026-11-15" },
@@ -233,5 +210,56 @@ window.App = window.App || {};
       ],
       reservasViaje: []
     };
+  };
+
+  // ---------- Blog compartido (semana 4+: moderación) ----------
+  // Las publicaciones ya no son de cada alumno: viven en la "comunidad" (js/comunidad.js),
+  // que todas las cuentas de este navegador comparten. Simula lo que hará el servidor.
+  const correoDe = m => m + "@utsc.edu.mx";
+  App.comunidadInicial = function () {
+    const ahora = Date.now();
+    return [
+      { id: "p1", autor: "José Antonio Prado Segura", matricula: "27144", correo: correoDe("27144"), cat: "Académico", t: ahora - 2 * HORA,
+        titulo: "Resumen del parcial de Redes Neuronales",
+        texto: "Comparto mis apuntes del tercer parcial. Cubrimos backpropagation, funciones de activación y optimización con Adam. Si alguien quiere el PDF me escribe. Mucho ánimo para el examen del viernes. #RedesNeuronales #ExamenFinal",
+        portada: { ico: "brain", grad: ["#2a3050", "#8b5cf6"] }, likes: 34, likedBy: [], reportes: [],
+        comentarios: [
+          { id: "k1", autor: "Elisa Berenice Ovalle Sánchez", correo: correoDe("27239"), txt: "¡Gracias! Me sirvió mucho la parte de Adam.", t: ahora - 90 * 60 * 1000 },
+          { id: "k2", autor: "Paola Alejandra Vega Núñez", correo: correoDe("27455"), txt: "¿Incluye los ejercicios de la tarea 3?", t: ahora - 60 * 60 * 1000 }
+        ] },
+      { id: "p2", autor: "Elisa Berenice Ovalle Sánchez", matricula: "27239", correo: correoDe("27239"), cat: "Vida universitaria", t: ahora - 5 * HORA,
+        titulo: "Ganamos el hackathon inter-universitario HackNL 2026",
+        texto: "Nuestro equipo de DSM04AV ganó el primer lugar con una app para reportar baches en Santa Catarina. Gracias a todos los que nos apoyaron. #HackNL2026 #UTSC2026",
+        portada: { ico: "trophy", grad: ["#e8781c", "#1b1f2e"] }, likes: 58, likedBy: [], reportes: [],
+        comentarios: [
+          { id: "k3", autor: "Juan Francisco Sánchez Pérez", correo: correoDe("26790"), txt: "¡Felicidades, equipo!", t: ahora - 4 * HORA },
+          // Comentario que el filtro mandó a revisión (solo lo ven su autor y los moderadores).
+          { id: "k4", autor: "Luis Alberto Morales Soto", correo: correoDe("25891"), txt: "Pinche suerte, el jurado ni vio nuestro proyecto", t: ahora - 3 * HORA,
+            mod: { estado: "revision", motivos: ["Groserías: «pinche»"], t: ahora - 3 * HORA, por: "Filtro automático" } }
+        ] },
+      { id: "p3", autor: "Juan Francisco Sánchez Pérez", matricula: "26790", correo: correoDe("26790"), cat: "Recursos", t: ahora - 26 * HORA,
+        titulo: "Repositorio de ejercicios de Bases de Datos: 40 ejercicios SQL",
+        texto: "Armé una lista de 40 ejercicios de SQL con soluciones, desde SELECT básicos hasta subconsultas y JOINs. Ideal para repasar antes del examen. #ExamenFinal",
+        portada: null, likes: 21, likedBy: [], reportes: [], comentarios: [] },
+      { id: "p4", autor: "María Fernanda Quiroga Reyes", matricula: "26512", correo: correoDe("26512"), cat: "Eventos", t: ahora - 2 * DIA,
+        titulo: "Inscripciones abiertas al servicio social de verano",
+        texto: "Vinculación ya publicó las plazas de servicio social. Hay lugares en el DIF y en el municipio. #ServicioSocial",
+        portada: null, likes: 12, likedBy: [], reportes: [], comentarios: [] },
+      // Publicación con 2 reportes: si alguien más la reporta, se oculta y pasa a revisión.
+      { id: "p5", autor: "Diego Armando Ríos Contreras", matricula: "24812", correo: correoDe("24812"), cat: "Vida universitaria", t: ahora - 7 * HORA,
+        titulo: "Vendo respuestas del examen de Cálculo",
+        texto: "Tengo las respuestas del examen final de Cálculo Integral. Interesados mándenme mensaje, precio a tratar. #ExamenFinal",
+        portada: null, likes: 2, likedBy: [], comentarios: [],
+        reportes: [
+          { correo: correoDe("27144"), motivo: "Información falsa o deshonestidad académica", t: ahora - 6 * HORA },
+          { correo: correoDe("27239"), motivo: "Información falsa o deshonestidad académica", t: ahora - 5 * HORA }
+        ] },
+      // Publicación que el filtro mandó a revisión al publicarse.
+      { id: "p6", autor: "Carlos Eduardo Ramírez Treviño", matricula: "25438", correo: correoDe("25438"), cat: "Tecnología", t: ahora - 50 * 60 * 1000,
+        titulo: "CURSOS GRATIS DE PROGRAMACIÓN!!!",
+        texto: "ENTREN YA A ESTOS LINKS PARA CURSOS GRATIS!!! http://cursos-gratis.xyz http://bit.ly/abc123 http://promo-dev.net ESCRIBANME AL 8112345678",
+        portada: null, likes: 0, likedBy: [], reportes: [], comentarios: [],
+        mod: { estado: "revision", motivos: ["Varios enlaces externos (3)", "Escrito casi todo en mayúsculas", "Comparte un número de teléfono"], t: ahora - 50 * 60 * 1000, por: "Filtro automático" } }
+    ];
   };
 })();

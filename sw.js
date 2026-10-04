@@ -25,7 +25,7 @@
       que envíe la cola de acciones pendientes (ver js/sync.js).
    ===================================================================== */
 
-const VERSION = "v1.5.0";
+const VERSION = "v1.6.0";
 const CACHE_SHELL = `utsc-shell-${VERSION}`;
 const CACHE_IMAGENES = "utsc-imagenes";      // se conserva entre versiones
 const CACHE_DATOS = "utsc-datos";            // contenido (noticias/eventos), se conserva entre versiones
@@ -45,6 +45,8 @@ const APP_SHELL = [
   "./js/nucleo.js",
   "./js/contenido.js",
   "./js/sync.js",
+  "./js/moderacion.js",
+  "./js/comunidad.js",
   "./js/menu-usuario.js",
   "./js/vistas/inicio.js",
   "./js/vistas/blog.js",
@@ -57,6 +59,7 @@ const APP_SHELL = [
   "./js/vistas/tramites.js",
   "./js/vistas/biblioteca.js",
   "./js/vistas/driver.js",
+  "./js/vistas/moderacion.js",
   "./js/app.js",
   "./js/pwa.js",
   "./fonts/outfit.woff2",

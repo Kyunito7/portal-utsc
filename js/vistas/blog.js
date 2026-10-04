@@ -1,11 +1,11 @@
-/* Blog estudiantil: publicar, filtrar, buscar, reaccionar, comentar y reportar. */
+/* Blog estudiantil: publicar, filtrar, buscar, reaccionar, comentar y reportar.
+   Las publicaciones están en App.comunidad (compartidas entre cuentas) y pasan por
+   App.moderacion antes de publicarse. */
 (function () {
-  const U = App.util;
+  const U = App.util, C = App.comunidad, MOD = App.moderacion;
   const local = { cat: "Todos", q: "", imagen: null, abiertos: {} };
   // Publicaciones de la comunidad que no están cargadas en este prototipo (para las tendencias).
   const BASE_TENDENCIAS = { ExamenFinal: 36, HackNL2026: 23, ServicioSocial: 16, RedesNeuronales: 11, UTSC2026: 8 };
-  // Moderación automática: palabras que bloquean la publicación.
-  const BLOQUEADAS = ["idiota", "estupido", "estúpido", "pendejo", "imbecil", "imbécil", "puto", "verga"];
 
   function hashtags(txt) { return (txt.match(/#[\wáéíóúñÁÉÍÓÚÑ]+/g) || []).map(t => t.slice(1)); }
   function textoConTags(txt) {
@@ -13,54 +13,80 @@
   }
   function filtrados() {
     const q = local.q.toLowerCase().replace(/^#/, "");
-    return App.state.posts.slice().sort((a, b) => b.t - a.t)
+    return C.visibles()
       .filter(p => local.cat === "Todos" || p.cat === local.cat)
       .filter(p => !q || (p.titulo + " " + p.texto + " " + p.autor).toLowerCase().includes(q));
   }
   function tendencias() {
     const c = Object.assign({}, BASE_TENDENCIAS);
-    App.state.posts.forEach(p => hashtags(p.texto).forEach(t => c[t] = (c[t] || 0) + 1));
+    C.posts.filter(p => MOD.estado(p) === "aprobado").forEach(p => hashtags(p.texto).forEach(t => c[t] = (c[t] || 0) + 1));
     return Object.entries(c).sort((a, b) => b[1] - a[1]).slice(0, 5);
   }
-  function moderar(txt) {
-    const t = txt.toLowerCase();
-    return BLOQUEADAS.some(p => new RegExp("\\b" + p + "\\b").test(t));
+
+  // Etiqueta y explicación para lo propio que no está aprobado.
+  function etiquetaModeracion(x) {
+    const e = MOD.estado(x);
+    if (e === "revision") return `<span class="badge b-yellow" title="Solo tú lo ves hasta que un moderador lo apruebe">${I("shield-alert")} En revisión</span>`;
+    if (e === "rechazado") return `<span class="badge b-red">${I("shield-x")} Rechazada</span>`;
+    return "";
+  }
+  function avisoModeracion(x) {
+    const e = MOD.estado(x);
+    if (e === "revision") return `<div class="mod-nota">${I("shield-alert")}<span><b>Solo tú la ves.</b> Un moderador la revisará pronto${x.mod.motivos && x.mod.motivos.length ? ". Motivo: " + U.esc(x.mod.motivos.join(", ")) : ""}.</span></div>`;
+    if (e === "rechazado") return `<div class="mod-nota rechazo">${I("shield-x")}<span><b>Un moderador rechazó esta publicación.</b> ${U.esc(x.mod.nota || x.mod.motivos.join(", "))}</span></div>`;
+    return "";
+  }
+
+  function comentario(c) {
+    const propio = C.esMio(c), e = MOD.estado(c);
+    return `<div class="comment ${e !== "aprobado" ? "en-revision" : ""}"><span class="avatar avatar-sm">${U.iniciales(c.autor)}</span>
+      <div class="grow"><b>${U.esc(c.autor)}</b> <span class="small muted">${c.pendiente ? I("clock") + " Pendiente de enviar" : U.hace(c.t)}</span>
+      ${propio && e === "revision" ? `<span class="small c-yellow"> · ${I("shield-alert")} En revisión, solo tú lo ves</span>` : ""}
+      ${propio && e === "rechazado" ? `<span class="small c-red"> · ${I("shield-x")} Rechazado por moderación</span>` : ""}
+      <p class="small">${U.esc(c.txt)}</p></div></div>`;
   }
 
   function tarjeta(p) {
-    const s = App.state, mostrarMat = !p.propio || s.ajustes.mostrarMatricula;
-    const abierto = local.abiertos[p.id];
-    return `<article class="card post">
+    const s = App.state, propio = C.esMio(p), mostrarMat = !propio || s.ajustes.mostrarMatricula;
+    const abierto = local.abiertos[p.id], liked = C.meGusta(p), comentarios = C.comentariosVisibles(p);
+    return `<article class="card post ${MOD.estado(p) !== "aprobado" ? "post-revision" : ""}">
       ${p.imagen ? `<img class="post-img" src="${p.imagen}" alt="">` : p.portada ? U.portada(p.portada, "post-img") : ""}
       <div class="post-body">
         <div class="row-between"><div class="row"><span class="avatar">${U.iniciales(p.autor)}</span>
           <div><b style="display:block;font-size:14px">${U.esc(p.autor)}</b><span class="mono small muted">${mostrarMat ? p.matricula + " · " : ""}${U.hace(p.t)}</span></div></div>
-          <span class="row" style="gap:6px">${p.pendiente ? App.util.pendiente() : ""}<span class="badge ${U.claseCategoria(p.cat)}">${p.cat}</span></span></div>
+          <span class="row" style="gap:6px;flex-wrap:wrap;justify-content:flex-end">${p.pendiente ? U.pendiente() : ""}${propio ? etiquetaModeracion(p) : ""}<span class="badge ${U.claseCategoria(p.cat)}">${p.cat}</span></span></div>
+        ${propio ? avisoModeracion(p) : ""}
         <h3>${U.esc(p.titulo)}</h3>
         <p style="white-space:pre-line">${textoConTags(p.texto)}</p>
         <div class="post-foot">
-          <button class="react-btn ${p.liked ? "on" : ""}" data-a="like" data-id="${p.id}" aria-pressed="${p.liked}" aria-label="Me gusta">${p.liked ? I("heart") : I("heart")} ${p.likes}</button>
-          <button class="react-btn" data-a="comentarios" data-id="${p.id}" aria-expanded="${!!abierto}">${I("message-circle")} ${p.comentarios.length}</button>
+          <button class="react-btn ${liked ? "on" : ""}" data-a="like" data-id="${p.id}" aria-pressed="${liked}" aria-label="Me gusta">${I("heart")} ${p.likes}</button>
+          <button class="react-btn" data-a="comentarios" data-id="${p.id}" aria-expanded="${!!abierto}">${I("message-circle")} ${comentarios.length}</button>
           <span class="grow"></span>
-          ${p.propio ? `<button class="react-btn" data-a="eliminar" data-id="${p.id}">${I("trash-2")} Eliminar</button>`
-            : p.reportado ? `<span class="small muted">${I("flag")} Reportada</span>` : `<button class="react-btn" data-a="reportar" data-id="${p.id}">${I("flag")} Reportar</button>`}
+          ${propio ? `<button class="react-btn" data-a="eliminar" data-id="${p.id}">${I("trash-2")} Eliminar</button>`
+            : C.yaReporte(p) ? `<span class="small muted">${I("flag")} Reportada</span>` : `<button class="react-btn" data-a="reportar" data-id="${p.id}">${I("flag")} Reportar</button>`}
         </div>
-        ${abierto ? `<div class="comments">${p.comentarios.map(c => `<div class="comment"><span class="avatar avatar-sm">${U.iniciales(c.autor)}</span>
-            <div class="grow"><b>${U.esc(c.autor)}</b> <span class="small muted">${c.pendiente ? I("clock") + " Pendiente de enviar" : U.hace(c.t)}</span><p class="small">${U.esc(c.txt)}</p></div></div>`).join("")}</div>` : ""}
-        <form class="comment-form" data-f="comentario" data-id="${p.id}"><label class="grow"><span hidden>Comentario</span><input class="input" name="txt" maxlength="300" placeholder="Escribe un comentario..." autocomplete="off"></label><button class="btn btn-teal">Enviar</button></form>
+        ${abierto ? `<div class="comments">${comentarios.map(comentario).join("")}</div>` : ""}
+        ${MOD.estado(p) === "aprobado" ? `<form class="comment-form" data-f="comentario" data-id="${p.id}"><label class="grow"><span hidden>Comentario</span><input class="input" name="txt" maxlength="300" placeholder="Escribe un comentario..." autocomplete="off"></label><button class="btn btn-teal">Enviar</button></form>` : ""}
       </div></article>`;
   }
 
   // Cuando el servidor confirma, se quita la marca de "pendiente".
   App.cola.alConfirmar("publicacion", d => {
-    const p = App.state.posts.find(x => x.id === d.id);
-    if (p) { p.pendiente = false; p.t = Date.now(); }
+    const p = C.buscar(d.id);
+    if (p) { p.pendiente = false; p.t = Date.now(); C.guardar(); }
   });
   App.cola.alConfirmar("comentario", d => {
-    const p = App.state.posts.find(x => x.id === d.post);
+    const p = C.buscar(d.post);
     const c = p && p.comentarios.find(x => x.id === d.id);
-    if (c) { c.pendiente = false; c.t = Date.now(); }
+    if (c) { c.pendiente = false; c.t = Date.now(); C.guardar(); }
   });
+
+  // Muestra por qué se bloqueó, dentro del formulario.
+  function avisoBloqueo(form, r) {
+    let a = form.querySelector(".mod-bloqueo");
+    if (!a) { a = document.createElement("div"); a.className = "mod-bloqueo"; form.insertBefore(a, form.querySelector(".composer-foot") || form.lastElementChild); }
+    a.innerHTML = `${I("shield-x")}<span><b>No se publicó.</b> ${U.esc(r.motivos.join(". "))}. Edita el texto y vuelve a intentarlo.</span>`;
+  }
 
   App.views.blog = {
     titulo: "Blog Estudiantil", nav: "blog", mod: "blog",
@@ -72,6 +98,7 @@
     },
     render() {
       const u = App.state.usuario, cats = App.CATALOGO.categoriasBlog;
+      const pendientesMod = MOD.esModerador() ? C.cuantosPendientes() : 0;
       return `<div class="wrap page"><div class="blog-grid">
         <div class="stack" style="gap:20px">
           <form class="card composer" data-f="publicar" novalidate>
@@ -91,12 +118,13 @@
           <div class="stack" style="gap:20px" data-p="lista">${this.parciales.lista()}</div>
         </div>
         <aside class="side-stack blog-side">
+          ${MOD.esModerador() ? `<a class="card card-pad mod-acceso" href="#moderacion">${I("shield-check")}<div class="grow"><b>Panel de moderación</b><span class="small muted">${pendientesMod ? pendientesMod + " por revisar" : "Todo al día"}</span></div>${pendientesMod ? `<span class="count">${pendientesMod}</span>` : ""}</a>` : ""}
           <div class="card card-pad"><label for="bp-q" hidden>Buscar publicaciones</label><input class="input" id="bp-q" type="search" placeholder="Buscar publicaciones..." value="${U.esc(local.q)}" data-c="buscar"></div>
           <div class="card card-pad"><h2 style="font-size:19px;margin-bottom:10px">Tendencias esta semana</h2>
             ${tendencias().map(([t, n]) => `<div class="trend"><button data-a="tag" data-tag="${U.esc(t)}">#${U.esc(t)}</button><span class="mono small muted">${n} posts</span></div>`).join("")}</div>
           <div class="card-dark card-pad stack"><h2 style="font-size:19px">Comunidad UTSC</h2>
-            <div class="stats" style="justify-content:space-between"><div class="stat"><b class="c-orange">1,284</b><small>Alumnos</small></div><div class="stat"><b class="c-orange">${App.state.posts.length + 338}</b><small>Posts este mes</small></div><div class="stat"><b class="c-orange">98%</b><small>Aprobados</small></div></div>
-            <div class="notice-box">${I("shield-check")} Moderación automática activa. Todo el contenido es revisado antes de publicarse.</div></div>
+            <div class="stats" style="justify-content:space-between"><div class="stat"><b class="c-orange">1,284</b><small>Alumnos</small></div><div class="stat"><b class="c-orange">${C.visibles().length + 338}</b><small>Posts este mes</small></div><div class="stat"><b class="c-orange">98%</b><small>Aprobados</small></div></div>
+            <div class="notice-box">${I("shield-check")} Moderación automática activa. Lo que tenga groserías, enlaces sospechosos o posibles amenazas pasa a revisión antes de publicarse.</div></div>
         </aside>
       </div></div>`;
     },
@@ -104,10 +132,13 @@
       cat(el) { local.cat = el.dataset.cat; App.render(); },
       tag(el) { local.q = "#" + el.dataset.tag; local.cat = "Todos"; App.render(); window.scrollTo(0, 0); },
       like(el) {
-        const p = App.state.posts.find(x => x.id === el.dataset.id);
-        p.liked = !p.liked; p.likes += p.liked ? 1 : -1;
-        App.guardar(); App.refrescar("lista");
-        if (p.liked) {
+        const p = C.buscar(el.dataset.id), yo = App.state.usuario.correo;
+        p.likedBy = p.likedBy || [];
+        const ahora = !p.likedBy.includes(yo);
+        if (ahora) p.likedBy.push(yo); else p.likedBy = p.likedBy.filter(c => c !== yo);
+        p.likes += ahora ? 1 : -1;
+        C.guardar(); App.refrescar("lista");
+        if (ahora) {
           const b = document.querySelector(`[data-a="like"][data-id="${p.id}"]`);
           if (b) b.classList.add("pop");
           if (navigator.vibrate) navigator.vibrate(12);   // vibración corta en celular
@@ -117,14 +148,30 @@
       quitarImg() { local.imagen = null; App.render(); },
       cancelar() { local.imagen = null; App.render(); },
       reportar(el) {
-        App.confirmar("Reportar publicación", "El equipo de moderación revisará la publicación. Quien la escribió no sabrá que la reportaste.", "Reportar", () => {
-          const p = App.state.posts.find(x => x.id === el.dataset.id); p.reportado = true;
-          App.registrar("Reportaste la publicación «" + p.titulo + "»"); App.guardar(); App.refrescar("lista"); App.toast("Gracias. La publicación se envió a moderación.");
-        });
+        const p = C.buscar(el.dataset.id);
+        App.modal(`<div class="modal-head"><h2>Reportar publicación</h2><p class="small muted">El equipo de moderación la revisará. Quien la escribió no sabrá que la reportaste.</p></div>
+          <form data-m="enviar" novalidate><div class="modal-body"><div class="field"><span class="label">¿Por qué la reportas?</span>
+            <div class="radio-list">${MOD.MOTIVOS_REPORTE.map((m, i) => `<label><input type="radio" name="motivo" value="${m}" ${i ? "" : "checked"}><span>${m}</span></label>`).join("")}</div></div></div>
+          <div class="modal-foot"><button type="button" class="btn btn-outline" data-m="cerrar">Cancelar</button><button class="btn btn-danger">Reportar</button></div></form>`,
+          { acciones: { enviar: f => {
+            p.reportes = p.reportes || [];
+            p.reportes.push({ correo: App.state.usuario.correo, motivo: f.motivo.value, t: Date.now() });
+            p.reportesRevisados = false;
+            let oculto = false;
+            if (p.reportes.length >= MOD.REPORTES_PARA_OCULTAR && MOD.estado(p) === "aprobado") {
+              // Con varios reportes se oculta sola hasta que un moderador decida.
+              p.mod = { estado: "revision", motivos: ["Recibió " + p.reportes.length + " reportes"], t: Date.now(), por: "Reportes de la comunidad" };
+              oculto = true;
+            }
+            C.avisar("rol:Moderador", "Moderación", "Reportaron la publicación «" + p.titulo + "» (" + f.motivo.value.toLowerCase() + ")" + (oculto ? ". Se ocultó por acumular reportes." : "."), "moderacion");
+            App.registrar("Reportaste la publicación «" + p.titulo + "»"); App.guardar(); C.guardar();
+            App.cerrarModal(); App.render();
+            App.toast(oculto ? "Gracias. La publicación se ocultó mientras moderación la revisa." : "Gracias. La publicación se envió a moderación.");
+          } } });
       },
       eliminar(el) {
         App.confirmar("Eliminar publicación", "La publicación y sus comentarios se borrarán. Esta acción no se puede deshacer.", "Eliminar", () => {
-          App.state.posts = App.state.posts.filter(x => x.id !== el.dataset.id); App.guardar(); App.render(); App.toast("Publicación eliminada");
+          C.posts = C.posts.filter(x => x.id !== el.dataset.id); C.guardar(); App.render(); App.toast("Publicación eliminada");
         }, true);
       }
     },
@@ -143,34 +190,41 @@
       }
     },
     formularios: {
-      publicar(f) {
+      async publicar(f) {
         const ok = App.validar(f, {
           titulo: v => v.length < 5 ? "Escribe un título de al menos 5 caracteres." : "",
           texto: v => v.length < 10 ? "Escribe un mensaje de al menos 10 caracteres." : ""
         });
         if (!ok) return;
-        const titulo = f.titulo.value.trim(), texto = f.texto.value.trim();
-        if (moderar(titulo + " " + texto)) { App.toast("La moderación automática detectó lenguaje ofensivo. Edita tu publicación.", "error"); return; }
+        const titulo = f.titulo.value.trim(), texto = f.texto.value.trim(), cat = f.cat.value;
+        const r = await MOD.revisar({ titulo, texto });
+        if (r.decision === "bloquear") { avisoBloqueo(f, r); return; }
         const u = App.state.usuario, id = "p" + Date.now();
-        // Semana 4: la publicación aparece al instante marcada como pendiente y se manda por la cola.
-        App.state.posts.unshift({ id, autor: U.nombreCompleto(), matricula: u.matricula, propio: true, cat: f.cat.value, t: Date.now(),
-          titulo, texto, imagen: local.imagen, portada: null, likes: 0, liked: false, reportado: false, comentarios: [], pendiente: true });
+        // La publicación aparece al instante; si hay que revisarla, solo la ve su autor.
+        C.posts.unshift({ id, autor: U.nombreCompleto(), matricula: u.matricula, correo: u.correo, cat, t: Date.now(),
+          titulo, texto, imagen: local.imagen, portada: null, likes: 0, likedBy: [], reportes: [], comentarios: [], pendiente: true,
+          mod: { estado: r.decision === "revisar" ? "revision" : "aprobado", motivos: r.motivos, prioridad: r.prioridad, t: Date.now(), por: r.fuente } });
+        if (r.decision === "revisar") C.avisar("rol:Moderador", "Moderación", "Nueva publicación en revisión: «" + titulo + "» (" + r.motivos.join(", ") + ")", "moderacion");
         local.imagen = null; local.cat = "Todos"; local.q = "";
-        App.registrar("Publicaste «" + titulo + "» en el blog"); App.guardar(); App.render();
-        App.cola.agregar("publicacion", { id, titulo, texto, cat: f.cat.value }, "Publicación «" + titulo + "»");
-        App.toast(navigator.onLine ? "Publicando…" : "Sin conexión: tu publicación se enviará cuando vuelva el internet");
+        App.registrar("Publicaste «" + titulo + "» en el blog"); App.guardar(); C.guardar(); App.render();
+        App.cola.agregar("publicacion", { id, titulo, texto, cat }, "Publicación «" + titulo + "»");
+        if (r.decision === "revisar") App.toast("Tu publicación quedó en revisión. Te avisaremos cuando un moderador la apruebe.");
+        else App.toast(navigator.onLine ? "Publicando…" : "Sin conexión: tu publicación se enviará cuando vuelva el internet");
       },
-      comentario(f) {
+      async comentario(f) {
         const txt = f.txt.value.trim();
         if (!txt) { f.txt.focus(); return; }
-        if (moderar(txt)) { App.toast("Tu comentario tiene lenguaje ofensivo y no se publicó.", "error"); return; }
-        const p = App.state.posts.find(x => x.id === f.dataset.id);
-        const id = "c" + Date.now();
-        p.comentarios.push({ id, autor: U.nombreCompleto(), txt, t: Date.now(), pendiente: true });
+        const r = await MOD.revisar({ texto: txt });
+        if (r.decision === "bloquear") { App.toast("Tu comentario no se publicó: " + r.motivos.join(". "), "error"); return; }
+        const p = C.buscar(f.dataset.id), u = App.state.usuario, id = "c" + Date.now();
+        p.comentarios.push({ id, autor: U.nombreCompleto(), correo: u.correo, txt, t: Date.now(), pendiente: true,
+          mod: { estado: r.decision === "revisar" ? "revision" : "aprobado", motivos: r.motivos, prioridad: r.prioridad, t: Date.now(), por: r.fuente } });
+        if (r.decision === "revisar") C.avisar("rol:Moderador", "Moderación", "Nuevo comentario en revisión en «" + p.titulo + "»", "moderacion");
         local.abiertos[p.id] = true;
-        App.guardar(); App.refrescar("lista");
+        C.guardar(); App.refrescar("lista");
         App.cola.agregar("comentario", { post: p.id, id, txt }, "Comentario en «" + p.titulo + "»");
-        if (!navigator.onLine) App.toast("Sin conexión: tu comentario se enviará después");
+        if (r.decision === "revisar") App.toast("Tu comentario quedó en revisión: " + r.motivos.join(", "));
+        else if (!navigator.onLine) App.toast("Sin conexión: tu comentario se enviará después");
       }
     }
   };

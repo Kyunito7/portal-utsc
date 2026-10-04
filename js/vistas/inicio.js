@@ -6,7 +6,7 @@
     titulo: "Inicio",
     render() {
       const s = App.state, u = s.usuario, ac = App.academico(), cat = App.CATALOGO;
-      const posts = s.posts.slice().sort((a, b) => b.t - a.t).slice(0, 3);
+      const posts = App.comunidad.visibles().filter(p => App.moderacion.estado(p) === "aprobado").slice(0, 3);
       const hoy = U.hoyISO();
       const eventos = cat.eventos.filter(e => e.fecha >= hoy).slice(0, 3);
       const listo = s.solicitudes.find(x => x.estado === 2);

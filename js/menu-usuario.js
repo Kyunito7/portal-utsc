@@ -22,6 +22,8 @@
     App.modal(pintar(), { acciones });
   };
 
+  M.moderacion = function () { App.ir("moderacion"); };
+
   M.perfil = function () {
     const u = App.state.usuario, ac = App.academico();
     App.modal(`<div class="profile-head"><span class="avatar avatar-lg">${U.iniciales(U.nombreCompleto())}</span>
@@ -172,7 +174,7 @@
           "Se borrará tu cuenta del portal y todos tus datos (publicaciones, viajes, préstamos de prueba). Esta acción no se puede deshacer.",
           "Eliminar cuenta", async () => {
             const correo = App.state.usuario.correo;
-            await App.cuentas.eliminar(correo); await App.borrarDatos(correo);
+            await App.cuentas.eliminar(correo); await App.borrarDatos(correo); await App.comunidad.borrarDe(correo);
             App.cerrarSesion(); location.hash = ""; App.render(true); App.toast("Tu cuenta se eliminó");
           }, true),
         guardar: f => {
@@ -190,7 +192,7 @@
 
   M.descargarDatos = function () {
     const s = App.state;
-    const datos = { usuario: s.usuario, ajustes: s.ajustes, publicaciones: s.posts.filter(p => p.propio).map(p => ({ titulo: p.titulo, texto: p.texto, categoria: p.cat })),
+    const datos = { usuario: s.usuario, ajustes: s.ajustes, publicaciones: App.comunidad.posts.filter(p => p.correo === s.usuario.correo).map(p => ({ titulo: p.titulo, texto: p.texto, categoria: p.cat, moderacion: App.moderacion.estado(p) })),
       pagos: s.historialPagos, solicitudes: s.solicitudes, prestamos: s.prestamos, viajes: s.reservasViaje, actividad: s.actividad };
     const txt = JSON.stringify(datos, null, 2);
     try {

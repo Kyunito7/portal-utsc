@@ -48,7 +48,7 @@
   // Guarda una acción en la cola. "resumen" es el texto que ve el alumno en Pendientes.
   cola.agregar = async function (tipo, datos, resumen) {
     const accion = { id: tipo + "-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6),
-      correo: correoActual(), tipo, datos, resumen, t: Date.now(), intentos: 0 };
+      correo: correoActual(), tipo, datos, resumen, t: Date.now(), intentos: 0, sinConexion: !navigator.onLine };
     if (await App.bd.disponible()) await App.bd.guardar("cola", accion); else memoria.push(accion);
     await cola.contar();
     pedirSyncEnSegundoPlano();
@@ -67,7 +67,7 @@
   cola.procesar = async function () {
     if (cola.procesando || !App.sesion || !navigator.onLine) return 0;
     cola.procesando = true;
-    let enviadas = 0;
+    let enviadas = 0, avisar = 0;   // solo se avisa de lo que se hizo sin conexión
     try {
       for (const accion of await cola.pendientes()) {
         try {
@@ -79,6 +79,7 @@
         }
         await quitar(accion.id);
         enviadas++;
+        if (accion.sinConexion || accion.intentos) avisar++;
         if (confirmadores[accion.tipo]) confirmadores[accion.tipo](accion.datos);
       }
     } finally {
@@ -88,7 +89,7 @@
       App.guardar();
       await cola.contar();
       if (App.sesion) App.render();
-      App.toast(enviadas === 1 ? "Se envió 1 acción pendiente" : "Se enviaron " + enviadas + " acciones pendientes");
+      if (avisar) App.toast(avisar === 1 ? "Se envió 1 acción pendiente" : "Se enviaron " + avisar + " acciones pendientes");
     }
     return enviadas;
   };
