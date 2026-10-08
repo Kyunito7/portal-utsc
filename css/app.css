@@ -842,3 +842,98 @@ html { scroll-behavior: smooth; }
 .aviso-demo { display: flex; gap: 10px; align-items: flex-start; padding: 10px 14px; border-radius: 12px; font-size: 13.5px;
   background: var(--blue-soft); color: #234a8a; border: 1px dashed #a9c2ee; margin: 0; }
 .aviso-demo .i { flex: none; width: 18px; height: 18px; margin-top: 1px; }
+
+/* ============================================================
+   MODO OSCURO — feature/elisa-modo-oscuro
+   Elisa Berenice Ovalle Sánchez
+   Sigue automáticamente la preferencia del sistema (prefers-color-scheme).
+   El interruptor en Configuración agrega data-tema="oscuro" / "claro" al <html>.
+   ============================================================ */
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="claro"]) {
+    color-scheme: dark;
+
+    /* Fondos */
+    --cream:       #111318;
+    --sand:        #1a1d26;
+    --white:       #1f2330;
+    --line:        #2e3347;
+
+    /* Texto */
+    --ink:         #e8eaf0;
+    --muted:       #8b91a8;
+    --muted-2:     #5a6078;
+
+    /* Marca — se mantiene el naranja pero un poco más suave */
+    --orange:      #f28c32;
+    --orange-dark: #d97520;
+    --orange-soft: #2a1e0f;
+
+    /* Teal */
+    --teal:        #14b8a6;
+    --teal-soft:   #0d2421;
+
+    /* Estados */
+    --red-soft:    #2a1015;
+    --green-soft:  #0d2018;
+    --blue-soft:   #0d1a2e;
+    --purple-soft: #1a1030;
+    --yellow-soft: #201a08;
+    --yellow-ink:  #d4a017;
+
+    /* Sombra más oscura */
+    --shadow: 0 10px 30px rgba(0, 0, 0, .45);
+
+    /* Barra navy ya era oscura — la hacemos más profunda */
+    --navy:   #0d1017;
+    --navy-2: #181c2a;
+    --navy-3: #202540;
+  }
+}
+
+/* También cuando el usuario activa el interruptor manualmente */
+:root[data-tema="oscuro"] {
+  color-scheme: dark;
+
+  --cream:       #111318;
+  --sand:        #1a1d26;
+  --white:       #1f2330;
+  --line:        #2e3347;
+
+  --ink:         #e8eaf0;
+  --muted:       #8b91a8;
+  --muted-2:     #5a6078;
+
+  --orange:      #f28c32;
+  --orange-dark: #d97520;
+  --orange-soft: #2a1e0f;
+
+  --teal:        #14b8a6;
+  --teal-soft:   #0d2421;
+
+  --red-soft:    #2a1015;
+  --green-soft:  #0d2018;
+  --blue-soft:   #0d1a2e;
+  --purple-soft: #1a1030;
+  --yellow-soft: #201a08;
+  --yellow-ink:  #d4a017;
+
+  --shadow: 0 10px 30px rgba(0, 0, 0, .45);
+
+  --navy:   #0d1017;
+  --navy-2: #181c2a;
+  --navy-3: #202540;
+}
+
+/* Imágenes un poco más tenues en modo oscuro para no lastimar la vista */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="claro"]) img:not([data-no-dim]) { filter: brightness(.88) contrast(1.05); }
+}
+:root[data-tema="oscuro"] img:not([data-no-dim]) { filter: brightness(.88) contrast(1.05); }
+
+/* Scrollbar oscura en navegadores que la soportan */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="claro"]) { scrollbar-color: var(--navy-3) var(--sand); }
+}
+:root[data-tema="oscuro"] { scrollbar-color: var(--navy-3) var(--sand); }
