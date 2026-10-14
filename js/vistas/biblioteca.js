@@ -50,7 +50,7 @@
       const n = s.prestamos.length;
       let cuerpo = "";
       if (local.tab === "catalogo") {
-        cuerpo = `<label><span hidden>Buscar libros</span><input class="input" style="background:var(--white)" type="search" placeholder="Buscar por título, autor o ISBN..." value="${U.esc(local.q)}" data-c="buscar"></label>
+        cuerpo = `<label><span hidden>Buscar libros</span><input class="input" style="background:var(--surface)" type="search" placeholder="Buscar por título, autor o ISBN..." value="${U.esc(local.q)}" data-c="buscar"></label>
           <div class="chips">${["Todas", ...cat.categoriasLibro].map(c => `<button class="chip ${local.cat === c ? "active" : ""}" data-a="cat" data-cat="${c}">${c}</button>`).join("")}</div>
           <div class="book-grid" data-p="lista">${lista()}</div>`;
       } else if (local.tab === "recursos") {

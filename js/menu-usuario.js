@@ -91,7 +91,7 @@
           : `<button type="button" class="action-row" data-m="instalar" data-solo-instalable ${K.puedeInstalar() ? "" : "hidden"}>${I("download")} Instalar el portal como app</button>`}
         <button type="button" class="action-row" data-m="rendimiento">${I("gauge")} Rendimiento de esta visita</button>
         <div class="section-label">Apariencia</div>
-        ${sw("cf-tema", "temaOscuro", \`${I("moon")} Modo oscuro\`, a.temaOscuro !== undefined ? a.temaOscuro : window.matchMedia("(prefers-color-scheme:dark)").matches)}
+        ${sw("cf-tema", "temaOscuro", `${I("moon")} Modo oscuro`, document.documentElement.dataset.tema === "oscuro")}
         <div class="section-label">Notificaciones</div>
         ${sw("cf-1", "notifBlog", "Nuevas publicaciones en el blog", a.notifBlog)}
         ${sw("cf-2", "notifComentarios", "Comentarios en mis publicaciones", a.notifComentarios)}
@@ -118,8 +118,13 @@
         }, true),
         guardar: f => {
           ["notifBlog", "notifComentarios", "notifModeracion", "notifInstitucional"].forEach(k => a[k] = f.elements[k].checked);
+          M.tema(f.elements.temaOscuro.checked);
           App.guardar(); App.cerrarModal(); App.toast("Configuración guardada");
         } } });
+    // Modo oscuro: cambia en cuanto mueves el interruptor, sin esperar a "Guardar"
+    const interruptorTema = document.getElementById("cf-tema");
+    if (interruptorTema) interruptorTema.addEventListener("change", () => M.tema(interruptorTema.checked));
+
     // Estado del service worker y del caché (semana 3)
     const caja = document.getElementById("pwa-estado");
     if (App.pwa && App.pwa.resumen && "caches" in window) {
@@ -255,22 +260,16 @@
     App.registrar("Cerraste sesión"); App.guardar();
     App.cerrarSesion(); location.hash = ""; App.render(true);
   };
-})();
 
-/* ---------- Modo oscuro: aplica el tema guardado al cargar ----------
-   Se ejecuta una sola vez cuando el script carga.
-   Lee localStorage primero; si no hay nada, sigue la preferencia del sistema. */
-(function aplicarTemaGuardado() {
-  const guardado = localStorage.getItem("utsc-tema");
-  if (guardado) {
-    document.documentElement.dataset.tema = guardado;
-  }
-  // Si el ajuste ya está en App.state (sesión activa), sincroniza el interruptor
-  if (typeof App !== "undefined" && App.state && App.state.ajustes) {
-    const a = App.state.ajustes;
-    if (a.temaOscuro === undefined) {
-      a.temaOscuro = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    }
-    document.documentElement.dataset.tema = a.temaOscuro ? "oscuro" : "claro";
-  }
+  /* ---------- Modo oscuro / claro ----------
+     Se guarda en localStorage ("utsc-tema") para que el <head> de index.html
+     lo aplique antes de pintar la página, aunque todavía no haya sesión. */
+  M.tema = function (oscuro) {
+    const tema = oscuro ? "oscuro" : "claro";
+    document.documentElement.dataset.tema = tema;
+    try { localStorage.setItem("utsc-tema", tema); } catch (e) { /* modo privado: solo dura esta visita */ }
+    if (App.state && App.state.ajustes) App.state.ajustes.temaOscuro = oscuro;
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.content = oscuro ? "#0d1017" : "#1b1f2e";
+  };
 })();
