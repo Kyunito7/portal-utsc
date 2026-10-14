@@ -825,10 +825,28 @@ html { scroll-behavior: smooth; }
 .post, .news-card, .mod-item { content-visibility: auto; contain-intrinsic-size: auto 360px; }
 .post.resaltado { box-shadow: 0 0 0 3px var(--orange), var(--shadow); transition: box-shadow .3s; }
 @media (max-width: 520px) { .solo-ancho { display: none; } }
-.instalar-app { display: flex; align-items: center; gap: 14px; padding: 16px 18px; flex-wrap: wrap; border: 1.5px solid var(--orange-soft); }
+/* Aviso "Instala el portal": tarjeta con un celular dibujado y 3 beneficios */
+.instalar-app { position: relative; display: grid; gap: 18px; justify-items: center; text-align: center; padding: 24px 20px; }
 .instalar-app[hidden] { display: none; }
-.instalar-app .ico { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; background: var(--orange-soft); color: var(--orange-dark); flex: none; }
-.instalar-app b { display: block; }
+.instalar-app .cerrar { position: absolute; top: 10px; right: 10px; background: none; border: 0; color: var(--muted); padding: 6px; border-radius: var(--r-sm); display: grid; }
+.instalar-app .cerrar:hover { background: var(--sand); color: var(--ink); }
+.instalar-app .tel { width: 118px; height: 200px; flex: none; border-radius: 22px; border: 6px solid #0b0d14; position: relative; overflow: hidden;
+  background: linear-gradient(var(--navy) 0 30px, var(--cream) 30px); box-shadow: 0 18px 40px rgba(27,31,46,.25); }
+.instalar-app .tel::before { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 50% 50%, rgba(232,120,28,.25), transparent 60%); }
+.instalar-app .tel img { position: absolute; left: 50%; top: 52%; width: 56px; height: 56px; border-radius: 14px; transform: translate(-50%, -50%); filter: none; }
+.instalar-app .tel i { position: absolute; left: 10px; right: 10px; height: 8px; border-radius: 4px; background: var(--line); }
+.instalar-app .texto { display: grid; gap: 14px; justify-items: center; }
+.instalar-app h2 { font-family: var(--f-display); font-size: 23px; margin: 0; }
+.instalar-app ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; text-align: left; font-size: 14.5px; }
+.instalar-app li { display: flex; gap: 8px; align-items: center; }
+.instalar-app li .i { color: var(--teal); width: 18px; height: 18px; flex: none; }
+.instalar-app .row { justify-content: center; }
+/* En pantallas anchas: celular a la izquierda y texto a la derecha */
+@media (min-width: 720px) {
+  .instalar-app { grid-template-columns: auto 1fr; justify-items: start; text-align: left; gap: 32px; padding: 28px 36px; align-items: center; }
+  .instalar-app .texto { justify-items: start; }
+  .instalar-app .row { justify-content: flex-start; }
+}
 .pasos { margin: 0; padding-left: 20px; display: grid; gap: 10px; }
 .pasos .i { width: 16px; height: 16px; vertical-align: -3px; }
 .metricas { display: grid; gap: 10px; }
@@ -899,4 +917,4 @@ html { scroll-behavior: smooth; }
 :root[data-tema="oscuro"] :is(.quick, .news-card, .res, .proc, .dept, .trip, .book, .person, .contact-card):hover { border-color: #4a5275; }
 :root[data-tema="oscuro"] .aviso-demo { color: #a9c2ee; border-color: #3a5a92; }
 /* Imágenes un poco más tenues para no lastimar la vista */
-:root[data-tema="oscuro"] img:not([data-no-dim]) { filter: brightness(.88) contrast(1.05); }
+:root[data-tema="oscuro"] img:not([data-no-dim], .instalar-app img) { filter: brightness(.88) contrast(1.05); }

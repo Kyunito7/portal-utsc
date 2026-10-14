@@ -26,9 +26,17 @@
         </div></section>
         <div class="wrap page stack" style="gap:32px">
           ${s.ajustes.ocultarInstalar || App.capacidades.instalada() ? "" : `<section class="card instalar-app" data-solo-instalable ${App.capacidades.puedeInstalar() ? "" : "hidden"}>
-            <span class="ico" aria-hidden="true">${I("smartphone")}</span>
-            <div class="grow"><b>Instala el Portal UTSC</b><span class="small muted">Ábrelo como app desde tu pantalla de inicio, más rápido y sin conexión.</span></div>
-            <div class="row"><button class="btn btn-ghost btn-sm" data-a="ocultarInstalar">Ahora no</button><button class="btn btn-primary btn-sm" data-a="instalar">${I("download")} Instalar</button></div>
+            <button class="cerrar" data-a="ocultarInstalar" aria-label="Cerrar aviso">${I("x")}</button>
+            <div class="tel" aria-hidden="true"><i style="top:42px"></i><i style="top:58px;right:40px"></i><img src="img/iconos/icono-192.png" alt=""><i style="bottom:30px"></i><i style="bottom:14px;right:50px"></i></div>
+            <div class="texto">
+              <h2>Tu portal, en cualquier lugar</h2>
+              <ul>
+                <li>${I("check")} Abre al instante desde tu pantalla de inicio</li>
+                <li>${I("check")} Funciona sin internet</li>
+                <li>${I("check")} Recibe avisos de tus trámites y pagos</li>
+              </ul>
+              <div class="row"><button class="btn btn-ghost" data-a="ocultarInstalar">Ahora no</button><button class="btn btn-primary" data-a="instalar">${I("download")} Instalar</button></div>
+            </div>
           </section>`}
           <section class="card-dark student-card">
             <span class="avatar avatar-lg">${U.iniciales(U.nombreCompleto())}</span>
