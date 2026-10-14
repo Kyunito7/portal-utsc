@@ -12,6 +12,7 @@ for (const boton of ['.instalar-app .btn-ghost', '.instalar-app .cerrar']) {
     await expect(aviso.locator("li")).toHaveCount(3);
     await page.click(boton);
     await expect(aviso).toHaveCount(0);
+    await page.evaluate(() => App.guardarYa()); // espera a que se guarde antes de recargar
     await page.reload();
     await page.waitForFunction(() => window.App && App.sesion);
     await expect(page.locator(".instalar-app")).toHaveCount(0);

@@ -90,7 +90,7 @@
 
   function comprobante(p) {
     const u = App.state.usuario;
-    App.modal(`<div class="modal-head row"><img src="img/logo-utsc.png" alt="" style="width:44px"><div><h2>Comprobante de pago</h2><p class="small muted">${App.CATALOGO.universidad.nombre}</p></div></div>
+    App.modal(`<div class="modal-head row"><img src="img/escudo-utsc.png" alt="" style="width:34px"><div><h2>Comprobante de pago</h2><p class="small muted">${App.CATALOGO.universidad.nombre}</p></div></div>
       <div class="modal-body">
         <div class="kv"><span>Alumno</span><b>${U.esc(U.nombreCompleto())}</b></div>
         <div class="kv"><span>Matrícula</span><b class="mono">${u.matricula}</b></div>

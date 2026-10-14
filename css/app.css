@@ -200,8 +200,8 @@ p { margin: 0; }
 }
 .login-inner { width: min(448px, 100%); display: grid; gap: 24px; justify-items: center; text-align: center; color: var(--white); transition: width .3s var(--ease); }
 .login-inner.ancho { width: min(560px, 100%); }
-.login-logo { background: var(--white); padding: 6px 10px; border-radius: 4px; animation: aparecer .5s var(--ease) both; }
-.login-logo img { width: 80px; height: auto; }
+.login-logo { animation: aparecer .5s var(--ease) both; }
+.login-logo img { width: 128px; height: auto; display: block; }
 .login h1 { font-size: clamp(24px, 4vw, 30px); }
 .login .sub { color: #c9ccd8; font-weight: 600; }
 .login .sub2 { color: #9da2b6; font-size: 13px; }
@@ -222,7 +222,7 @@ p { margin: 0; }
 .topbar { background: var(--navy); color: var(--white); position: sticky; top: env(safe-area-inset-top, 0px); z-index: 40; }
 .topbar .wrap { display: flex; align-items: center; gap: 16px; height: 64px; }
 .brand { display: flex; align-items: center; gap: 12px; text-decoration: none; flex: none; }
-.brand img { width: 36px; height: 28px; object-fit: contain; background: var(--white); border-radius: 2px; }
+.brand img { width: 24px; height: 34px; object-fit: contain; }
 .brand b { font-family: var(--f-display); font-size: 17px; display: block; line-height: 1; }
 .brand small { color: #a9aec2; font-size: 12px; }
 .mainnav { display: flex; gap: 4px; margin-inline: auto; }
@@ -290,7 +290,7 @@ p { margin: 0; }
 .footer a { text-decoration: none; display: block; padding-block: 3px; }
 .footer a:hover { color: var(--white); }
 .footer-brand { display: flex; align-items: center; gap: 12px; color: var(--white); margin-bottom: 14px; }
-.footer-brand img { width: 40px; background: var(--white); border-radius: 2px; }
+.footer-brand img { width: 30px; height: auto; }
 .footer-brand b { font-family: var(--f-display); font-size: 18px; }
 .footer .copy { border-top: 1px solid var(--navy-3); margin-top: 32px; padding-top: 20px; text-align: center; font-size: 13px; }
 @media (max-width: 760px) { .footer-grid { grid-template-columns: 1fr; } }
@@ -917,4 +917,4 @@ html { scroll-behavior: smooth; }
 :root[data-tema="oscuro"] :is(.quick, .news-card, .res, .proc, .dept, .trip, .book, .person, .contact-card):hover { border-color: #4a5275; }
 :root[data-tema="oscuro"] .aviso-demo { color: #a9c2ee; border-color: #3a5a92; }
 /* Imágenes un poco más tenues para no lastimar la vista */
-:root[data-tema="oscuro"] img:not([data-no-dim], .instalar-app img) { filter: brightness(.88) contrast(1.05); }
+:root[data-tema="oscuro"] img:not([data-no-dim], .instalar-app img, [src*="utsc"]) { filter: brightness(.88) contrast(1.05); }

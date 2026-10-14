@@ -26,7 +26,7 @@
       que envíe la cola de acciones pendientes (ver js/sync.js).
    ===================================================================== */
 
-const VERSION = "v1.8.3";
+const VERSION = "v1.8.4";
 const CACHE_SHELL = `utsc-shell-${VERSION}`;
 const CACHE_IMAGENES = "utsc-imagenes";      // se conserva entre versiones
 const CACHE_DATOS = "utsc-datos";            // contenido (noticias/eventos), se conserva entre versiones
@@ -68,7 +68,8 @@ const APP_SHELL = [
   "./fonts/fraunces.woff2",
   "./fonts/jetbrains-mono-400.woff2",
   "./fonts/jetbrains-mono-700.woff2",
-  "./img/logo-utsc.png",
+  "./img/escudo-utsc.png",
+  "./img/logo-utsc-completo.png",
   "./img/campus-aereo.webp",
   "./img/campus-montana.webp",
   "./img/iconos/icono-32.png",
