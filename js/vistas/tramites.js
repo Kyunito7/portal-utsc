@@ -52,7 +52,7 @@
 
   function documento(s) {
     const t = U.tramite(s.tramite), u = App.state.usuario;
-    App.modal(`<div class="modal-head row"><img src="img/logo-utsc.png" alt="" style="width:44px"><div><h2>${t.nombre}</h2><span class="mono small muted">Folio ${s.folio}</span></div></div>
+    App.modal(`<div class="modal-head row"><img src="img/escudo-utsc.png" alt="" style="width:34px"><div><h2>${t.nombre}</h2><span class="mono small muted">Folio ${s.folio}</span></div></div>
       <div class="modal-body"><p>A quien corresponda${s.destino ? " (" + U.esc(s.destino) + ")" : ""}:</p>
         <p>La ${App.CATALOGO.universidad.nombre} hace constar que <b>${U.esc(U.nombreCompleto())}</b>, con matrícula <span class="mono">${u.matricula}</span>, es alumno inscrito en el ${u.semestre}° semestre de ${U.carrera(u.carrera)}, grupo ${u.grupo}, en el periodo ${App.CATALOGO.universidad.periodo}.</p>
         <p class="small muted">Documento emitido el ${U.fecha(s.fecha)} por Servicios Escolares. Vista previa de prueba, sin validez oficial.</p></div>

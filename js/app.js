@@ -75,7 +75,7 @@
     const u = App.CATALOGO.universidad, crear = modoLogin === "crear";
     return `<div class="login">
       <div class="login-inner ${crear ? "ancho" : ""}">
-        <div class="login-logo"><img src="img/logo-utsc.png" alt="Logotipo UTSC" width="80" height="62"></div>
+        <div class="login-logo"><img src="img/logo-utsc-completo.png" alt="Logotipo UTSC, Universidad Tecnológica Santa Catarina" width="128" height="152"></div>
         <div><h1>Portal Universitario</h1><p class="sub">${u.nombre}</p><p class="sub2">${u.ciudad}</p></div>
         <div class="login-card">
           <header><h2>${crear ? "Crear cuenta" : "Iniciar sesión"}</h2><p>${crear ? "Regístrate con tu correo institucional UTSC" : "Acceso exclusivo para la comunidad universitaria UTSC"}</p></header>

@@ -18,6 +18,9 @@
   <link rel="preload" href="fonts/outfit.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="fonts/fraunces.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/app.css">
+  <!-- Modo oscuro: se aplica antes de pintar para que no "parpadee". La primera vez sigue al sistema;
+       después, lo que elijas en Configuración → Apariencia (js/menu-usuario.js, M.tema). -->
+  <script>try { document.documentElement.dataset.tema = localStorage.getItem("utsc-tema") || (matchMedia("(prefers-color-scheme: dark)").matches ? "oscuro" : "claro"); } catch (e) {}</script>
   <!-- Si no hay sesión, se oculta el shell desde el inicio para que no "parpadee" -->
   <script>try { if (!localStorage.getItem("utsc-portal-sesion")) document.documentElement.classList.add("sin-sesion"); } catch (e) { document.documentElement.classList.add("sin-sesion"); }</script>
 
@@ -104,6 +107,8 @@
 <symbol id="i-message-circle" viewBox="0 0 24 24"><path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719" /></symbol>
 <symbol id="i-microscope" viewBox="0 0 24 24"><path d="M6 18h8" /><path d="M3 22h18" /><path d="M14 22a7 7 0 1 0 0-14h-1" /><path d="M9 14h2" /><path d="M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2Z" /><path d="M12 6V3a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v3" /></symbol>
 <symbol id="i-monitor" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="3" rx="2" /><line x1="8" x2="16" y1="21" y2="21" /><line x1="12" x2="12" y1="17" y2="21" /></symbol>
+<symbol id="i-moon" viewBox="0 0 24 24"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401" /></symbol>
+<symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></symbol>
 <symbol id="i-newspaper" viewBox="0 0 24 24"><path d="M15 18h-5" /><path d="M18 14h-8" /><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-4 0v-9a2 2 0 0 1 2-2h2" /><rect width="8" height="4" x="10" y="6" rx="1" /></symbol>
 <symbol id="i-notebook-pen" viewBox="0 0 24 24"><path d="M13.4 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7.4" /><path d="M2 6h4" /><path d="M2 10h4" /><path d="M2 14h4" /><path d="M2 18h4" /><path d="M21.378 5.626a1 1 0 1 0-3.004-3.004l-5.01 5.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z" /></symbol>
 <symbol id="i-party-popper" viewBox="0 0 24 24"><path d="M5.8 11.3 2 22l10.7-3.79" /><path d="M4 3h.01" /><path d="M22 8h.01" /><path d="M15 2h.01" /><path d="M22 20h.01" /><path d="m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10" /><path d="m22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11c-.11.7-.72 1.22-1.43 1.22H17" /><path d="m11 2 .33.82c.34.86-.2 1.82-1.11 1.98C9.52 4.9 9 5.52 9 6.23V7" /><path d="M11 13c1.93 1.93 2.83 4.17 2 5-.83.83-3.07-.07-5-2-1.93-1.93-2.83-4.17-2-5 .83-.83 3.07.07 5 2Z" /></symbol>
@@ -142,7 +147,7 @@
      Semana 5 (rendimiento): el encabezado ya viene escrito para que se vea al instante,
      sin esperar a que cargue JavaScript. El formulario lo agrega app.js. -->
 <div id="login" data-pre><div class="login"><div class="login-inner">
-  <div class="login-logo"><img src="img/logo-utsc.png" alt="Logotipo UTSC" width="80" height="62"></div>
+  <div class="login-logo"><img src="img/logo-utsc-completo.png" alt="Logotipo UTSC, Universidad Tecnológica Santa Catarina" width="128" height="152"></div>
   <div><h1>Portal Universitario</h1><p class="sub">Universidad Tecnológica de Santa Catarina</p><p class="sub2">Santa Catarina, Nuevo León</p></div>
 </div></div></div>
 
@@ -153,7 +158,7 @@
   <header class="topbar">
     <div class="wrap">
       <button class="menu-toggle" id="menu-toggle" aria-label="Abrir menú" aria-expanded="false"><svg class="i" aria-hidden="true"><use href="#i-menu"></use></svg></button>
-      <a class="brand" href="#inicio"><img src="img/logo-utsc.png" alt="" width="36" height="28"><span><b>UTSC</b><small>Portal Universitario</small></span></a>
+      <a class="brand" href="#inicio"><img src="img/escudo-utsc.png" alt="" width="24" height="34"><span><b>UTSC</b><small>Portal Universitario</small></span></a>
       <nav class="mainnav" id="mainnav" aria-label="Principal">
         <a href="#inicio" data-ruta="inicio">Inicio</a>
         <a href="#blog" data-ruta="blog">Blog</a>
@@ -211,7 +216,7 @@
 
   <footer class="footer"><div class="wrap">
     <div class="footer-grid">
-      <div><div class="footer-brand"><img src="img/logo-utsc.png" alt="" width="40" height="31"><b>UTSC</b></div>
+      <div><div class="footer-brand"><img src="img/escudo-utsc.png" alt="" width="30" height="43"><b>UTSC</b></div>
         <p>Universidad Tecnológica de Santa Catarina. Ingeniería en Desarrollo de Software Multiplataforma.</p>
         <p class="mono small" style="margin-top:12px">Grupo <span data-shell="grupo">DSM04AV</span> · v1.8 · Nov 2026</p></div>
       <div><h4>Módulos</h4>
