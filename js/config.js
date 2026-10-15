@@ -18,8 +18,8 @@
    Guía completa paso a paso: supabase/LEEME.md */
 window.App = window.App || {};
 App.config = {
-  supabaseUrl: "",
-  supabaseKey: "",
+  supabaseUrl: "https://kguecngeowhmkiygmetp.supabase.co",
+  supabaseKey: "sb_publishable_38hP84hdz-k1XF3NkLa-hw_vDSgkDxa",
 
   // true = solo se aceptan correos que terminan en @utsc.edu.mx
   // false = cualquier correo real (Gmail, Outlook, etc.); igual se tiene que confirmar.
