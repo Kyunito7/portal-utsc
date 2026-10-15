@@ -70,7 +70,7 @@
       let cuerpo;
       if (local.tab === "buscar") {
         cuerpo = `<div class="filter-bar"><label class="grow" style="display:flex"><span hidden>Filtrar por lugar</span><input class="input" type="search" placeholder="Filtrar por colonia, municipio o conductor..." value="${U.esc(local.q)}" data-c="buscar"></label>
-            <select class="select" style="width:auto;background:var(--white)" data-c="sentidoFiltro" aria-label="Sentido"><option value="todos">Ida y regreso</option><option value="ida" ${local.sentido === "ida" ? "selected" : ""}>Hacia la UTSC</option><option value="regreso" ${local.sentido === "regreso" ? "selected" : ""}>Desde la UTSC</option></select></div>
+            <select class="select" style="width:auto;background:var(--surface)" data-c="sentidoFiltro" aria-label="Sentido"><option value="todos">Ida y regreso</option><option value="ida" ${local.sentido === "ida" ? "selected" : ""}>Hacia la UTSC</option><option value="regreso" ${local.sentido === "regreso" ? "selected" : ""}>Desde la UTSC</option></select></div>
           <div class="chips">${[["Todos", -1], ...U.DIAS.map((d, i) => [d, i])].map(([t, i]) => `<button class="chip ${local.dia === i ? "active" : ""}" data-a="dia" data-d="${i}">${t}</button>`).join("")}</div>
           <div class="stack" data-p="lista">${lista()}</div>`;
       } else if (local.tab === "mis") {
