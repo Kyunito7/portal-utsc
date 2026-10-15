@@ -53,7 +53,7 @@
       ${p.imagen ? `<img class="post-img" src="${p.imagen}" alt="" loading="lazy" decoding="async">` : p.portada ? U.portada(p.portada, "post-img") : ""}
       <div class="post-body">
         <div class="row-between"><div class="row"><span class="avatar">${U.iniciales(p.autor)}</span>
-          <div><b style="display:block;font-size:14px">${U.esc(p.autor)}</b><span class="mono small muted">${mostrarMat ? p.matricula + " · " : ""}${U.hace(p.t)}</span></div></div>
+          <div><b style="display:block;font-size:14px">${U.esc(p.autor)}</b><span class="mono small muted">${mostrarMat ? U.esc(p.matricula) + " · " : ""}${U.hace(p.t)}</span></div></div>
           <span class="row" style="gap:6px;flex-wrap:wrap;justify-content:flex-end">${p.pendiente ? U.pendiente() : ""}${propio ? etiquetaModeracion(p) : ""}<span class="badge ${U.claseCategoria(p.cat)}">${p.cat}</span></span></div>
         ${propio ? avisoModeracion(p) : ""}
         <h3>${U.esc(p.titulo)}</h3>
@@ -103,7 +103,7 @@
       return `<div class="wrap page"><div class="blog-grid">
         <div class="stack" style="gap:20px">
           <form class="card composer" data-f="publicar" novalidate>
-            <div class="row"><span class="avatar">${U.iniciales(U.nombreCompleto())}</span><div><b style="display:block;font-size:14px">${U.esc(U.nombreCompleto())}</b><span class="mono small muted">${u.matricula} · ${u.grupo}</span></div></div>
+            <div class="row"><span class="avatar">${U.iniciales(U.nombreCompleto())}</span><div><b style="display:block;font-size:14px">${U.esc(U.nombreCompleto())}</b><span class="mono small muted">${U.esc(u.matricula)} · ${U.esc(u.grupo)}</span></div></div>
             <div class="field"><label for="bp-t" hidden>Título</label><input class="input" id="bp-t" name="titulo" maxlength="120" placeholder="Título de tu publicación" style="font-weight:600"></div>
             <div class="field"><label for="bp-x" hidden>Mensaje</label><textarea class="textarea" id="bp-x" name="texto" maxlength="2000" placeholder="Escribe tu mensaje, comparte recursos, noticias o experiencias... Usa #hashtags para que te encuentren."></textarea></div>
             ${local.imagen ? `<div class="composer-preview"><img src="${local.imagen}" alt="Vista previa de la imagen"><button type="button" class="btn btn-sm btn-dark" data-a="quitarImg">Quitar</button></div>` : ""}

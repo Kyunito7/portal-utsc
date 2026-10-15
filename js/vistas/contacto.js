@@ -18,7 +18,7 @@
           <div><h1 style="font-size:clamp(24px,3vw,30px)">Contactar a la institución</h1><p class="muted">Completa el formulario y te responderemos en un plazo de 24 a 48 horas hábiles.</p></div>
           <div class="form-row">
             <div class="field"><label for="ct-n">Nombre completo</label><input class="input" id="ct-n" value="${U.esc(U.nombreCompleto())}" readonly></div>
-            <div class="field"><label for="ct-m">Matrícula</label><input class="input" id="ct-m" value="${u.matricula}" readonly></div>
+            <div class="field"><label for="ct-m">Matrícula</label><input class="input" id="ct-m" value="${U.esc(u.matricula)}" readonly></div>
           </div>
           <div class="field"><label for="ct-e">Correo electrónico</label><input class="input" id="ct-e" value="${u.correo}" readonly></div>
           <div class="field"><label for="ct-d">Departamento</label><select class="select" id="ct-d" name="depto">

@@ -167,13 +167,15 @@ Como el blog no tiene supervisores las 24 horas, todo lo que se publica pasa por
 
 **IA para la entrega final:** `App.moderacion.revisar()` es el único punto que decide. Se cambiará por una llamada a una función de Supabase que consulte una IA. La clave de la IA va en el servidor, nunca en el JavaScript del portal. Las pantallas no cambian.
 
+> **Limitaciones de esta etapa (prototipo local):** la moderación corre en el navegador, así que un usuario con conocimientos podría saltársela desactivando JavaScript; será confiable cuando se mueva al servidor (Edge Function). Y el blog "compartido" vive en el IndexedDB de **cada navegador**: el moderador ve lo que se publica *en su equipo*, no lo de otros dispositivos. La moderación y el muro realmente multiusuario llegan cuando entre Supabase (PR #8).
+
 ## Cuentas de usuario
 
 - Pantallas de **Iniciar sesión** y **Crear cuenta** (nombre, matrícula, carrera, cuatrimestre, grupo, correo `@utsc.edu.mx` y contraseña).
 - Las cuentas se guardan en el navegador con **IndexedDB** (`js/cuentas.js`). La contraseña no se guarda: se guarda un hash **PBKDF2** con sal aleatoria.
 - Los datos de cada alumno (publicaciones, pagos, trámites, viajes) se guardan por separado en IndexedDB (desde la semana 4).
 - Botón **«Explorar con una cuenta de prueba»** para revisar el portal sin registrarse (`demo@utsc.edu.mx` / `demo2026`).
-- Más adelante `App.cuentas` se puede reemplazar por Supabase sin cambiar las pantallas.
+- Más adelante `App.cuentas` se puede reemplazar por Supabase sin cambiar las pantallas. **Recomendado:** usar **Supabase Auth** (que guarda y verifica la contraseña de forma segura) en vez de verificar contra la tabla `usuarios` por nuestra cuenta; así `usuarios` solo guarda el perfil. Las políticas de seguridad de la base están en `pg_04_seguridad_rls.sql` y ya quedan listas para ese modelo.
 
 ## Fluidez
 
