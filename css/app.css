@@ -841,6 +841,13 @@ html { scroll-behavior: smooth; }
 .instalar-app li { display: flex; gap: 8px; align-items: center; }
 .instalar-app li .i { color: var(--teal); width: 18px; height: 18px; flex: none; }
 .instalar-app .row { justify-content: center; }
+/* Confirmación antes de instalar */
+.confirmar-instalar { display: grid; gap: 10px; justify-items: center; text-align: center; padding-top: 28px; }
+.confirmar-instalar img { border-radius: 16px; box-shadow: 0 8px 24px rgba(232,120,28,.3); }
+.confirmar-instalar h2 { font-family: var(--f-display); font-size: 22px; margin: 6px 0 0; }
+.confirmar-instalar p { margin: 0; }
+.confirmar-instalar .small { display: flex; gap: 6px; align-items: center; color: var(--teal); }
+.confirmar-instalar .small .i { width: 16px; height: 16px; }
 /* En pantallas anchas: celular a la izquierda y texto a la derecha */
 @media (min-width: 720px) {
   .instalar-app { grid-template-columns: auto 1fr; justify-items: start; text-align: left; gap: 32px; padding: 28px 36px; align-items: center; }
