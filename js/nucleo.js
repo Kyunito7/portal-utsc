@@ -262,6 +262,18 @@
       const el = e.target.closest("[data-mc]");
       if (el && acciones[el.dataset.mc]) acciones[el.dataset.mc](el, e, modal);
     });
+    // Accesibilidad: cerrar con Escape y mantener el foco dentro de la ventana (trampa de foco).
+    const enfocables = () => modal.querySelectorAll(
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])');
+    ov.addEventListener("keydown", e => {
+      if (e.key === "Escape") { e.preventDefault(); return App.cerrarModal(); }
+      if (e.key !== "Tab") return;
+      const f = enfocables();
+      if (!f.length) return;
+      const primero = f[0], ultimo = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === primero) { e.preventDefault(); ultimo.focus(); }
+      else if (!e.shiftKey && document.activeElement === ultimo) { e.preventDefault(); primero.focus(); }
+    });
     const foco = modal.querySelector("[autofocus], input, select, textarea, button");
     if (foco) foco.focus();
     App._modalAbierto = ov;
