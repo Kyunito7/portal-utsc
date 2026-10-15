@@ -20,12 +20,17 @@
   App.cargar = async function () {
     App.state = null;
     App.sesion = false;
-    const correo = leer(CLAVE_SESION);
-    if (!correo) return;
-    const perfil = await App.cuentas.obtener(correo);
-    if (!perfil) { escribir(CLAVE_SESION, null); return; }
-    await App.abrirDatos(perfil);
+    App.avisoInicio = null;
+    // En modo nube también procesa el enlace del correo (confirmar cuenta o recuperar contraseña).
+    let r;
+    try { r = await App.cuentas.sesion(); }
+    catch (e) { r = { perfil: null, error: e.message }; }
+    App.avisoInicio = r.error || r.accion ? r : null;
+    if (!r.perfil) { escribir(CLAVE_SESION, null); return; }
+    if (r.accion === "recuperar") { App.perfilRecuperar = r.perfil; return; }   // primero pide la contraseña nueva
+    await App.abrirDatos(r.perfil);
     App.sesion = true;
+    escribir(CLAVE_SESION, r.perfil.correo);
   };
 
   // Lee los datos de una cuenta desde IndexedDB; si es nueva, crea sus datos de ejemplo.
@@ -82,6 +87,7 @@
     if (pendiente) App.guardarYa();
     if (App.comunidad && App.comunidad.listo) App.comunidad.guardarYa();
     App.sesion = false; escribir(CLAVE_SESION, null);
+    App.cuentas.salir();   // modo nube: invalida la sesión en Supabase
   };
   App.borrarDatos = async function (correo) {
     escribir(claveVieja(correo), null);

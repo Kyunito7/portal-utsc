@@ -215,6 +215,26 @@ p { margin: 0; }
 .login-alert { background: var(--red-soft); color: var(--red); border-radius: var(--r-sm); padding: 10px 12px; font-size: 14px; animation: subir .25s var(--ease); }
 .login-switch { text-align: center; font-size: 14px; color: var(--muted); }
 .login-nota { text-align: center; font-size: 12.5px; color: var(--muted-2); }
+.login-alert.ok { background: var(--green-soft); color: var(--green); }
+.login-texto { font-size: 14.5px; color: var(--ink); line-height: 1.5; }
+.login-olvide { justify-self: end; margin-top: -8px; font-size: 13.5px; }
+.login-nota .i { width: 14px; height: 14px; vertical-align: -2px; }
+.login-revisa { text-align: center; justify-items: center; }
+.login-icono { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; background: var(--teal-soft); color: var(--teal); }
+.login-icono .i { width: 26px; height: 26px; }
+/* Medidor de seguridad de la contraseña */
+.medidor { display: grid; gap: 8px; margin-top: -6px; }
+.medidor-barra { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.medidor-barra span { height: 5px; border-radius: 3px; background: var(--line); transition: background .25s; }
+.medidor[data-nivel="1"] .medidor-barra span:nth-child(-n+1) { background: var(--red); }
+.medidor[data-nivel="2"] .medidor-barra span:nth-child(-n+2) { background: var(--orange); }
+.medidor[data-nivel="3"] .medidor-barra span:nth-child(-n+3) { background: var(--teal); }
+.medidor[data-nivel="4"] .medidor-barra span { background: var(--green); }
+.medidor-reglas { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 2px 12px; font-size: 12.5px; color: var(--muted); }
+.medidor-reglas li::before { content: "○ "; }
+.medidor-reglas li.ok { color: var(--green); }
+.medidor-reglas li.ok::before { content: "✓ "; }
+@media (max-width: 480px) { .medidor-reglas { grid-template-columns: 1fr; } }
 .sacudir { animation: sacudir .4s; }
 @keyframes sacudir { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
 

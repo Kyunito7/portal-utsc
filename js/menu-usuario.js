@@ -99,7 +99,10 @@
         ${sw("cf-4", "notifInstitucional", "Comunicados institucionales", a.notifInstitucional)}
         <div class="section-label">Cuenta</div>
         <button type="button" class="action-row" data-m="pass">${I("key-round")} Cambiar contraseña</button>
-        <div class="action-row" style="color:var(--teal);font-weight:600">${I("mail")} ${u.correo} ✓ verificado</div>
+        ${App.cuentas.modo === "nube"
+          ? `<div class="action-row" style="color:var(--teal);font-weight:600">${I("mail")} ${U.esc(u.correo)} ✓ verificado</div>
+        <button type="button" class="action-row" data-m="salirTodos">${I("log-out")} Cerrar sesión en todos mis dispositivos</button>`
+          : `<div class="action-row" style="cursor:default">${I("mail")} ${U.esc(u.correo)} · cuenta de demostración (solo en este navegador)</div>`}
         <div class="section-label">Uso sin conexión</div>
         <div class="action-row" id="pwa-estado" style="cursor:default">${I("wifi")} Revisando…</div>
         <div class="action-row" id="datos-estado" style="cursor:default">${I("database")} Revisando datos guardados…</div>
@@ -108,6 +111,11 @@
         <button class="btn btn-dark btn-block" type="submit">Guardar y cerrar</button>
       </div></form>`, { acciones: {
         pass: () => M.cambiarPassword(),
+        salirTodos: () => App.confirmar("Cerrar sesión en todos lados", "Se cerrará tu sesión en este y en todos los dispositivos donde hayas entrado. Úsalo si perdiste tu celular o crees que alguien más entró a tu cuenta.", "Cerrar todas", async () => {
+          App.registrar("Cerraste sesión en todos tus dispositivos"); await App.guardarYa();
+          await App.cuentas.salir(true);
+          App.cerrarSesion(); location.hash = ""; App.render(true); App.toast("Se cerró tu sesión en todos los dispositivos");
+        }, true),
         permiso: async () => { await App.capacidades.pedirPermiso(); M.config(); },
         probar: () => App.capacidades.mostrar({ titulo: "Prueba · Portal UTSC", texto: "Así se ven los avisos del portal.", ir: "inicio", etiqueta: "prueba" }),
         instalar: () => App.capacidades.instalar(),
@@ -169,29 +177,36 @@
   };
 
   M.cambiarPassword = function () {
-    const u = App.state.usuario;
+    const u = App.state.usuario, S = App.seguridad;
     App.modal(`<div class="modal-head"><h2>Cambiar contraseña</h2></div>
       <form data-m="guardar" novalidate><div class="modal-body">
         <div class="field"><label for="cp-a">Contraseña actual</label><input class="input" id="cp-a" name="actual" type="password" autocomplete="current-password"></div>
-        <div class="field"><label for="cp-n">Nueva contraseña</label><input class="input" id="cp-n" name="nueva" type="password" autocomplete="new-password"><small class="muted">Mínimo 8 caracteres, con al menos un número.</small></div>
-        <div class="field"><label for="cp-c">Confirmar nueva contraseña</label><input class="input" id="cp-c" name="conf" type="password" autocomplete="new-password"></div>
+        <div class="field"><label for="cp-n">Nueva contraseña</label><input class="input" id="cp-n" name="nueva" type="password" autocomplete="new-password" maxlength="${S.MAX}">${App.medidorPassword("cp-n")}</div>
+        <div class="field"><label for="cp-c">Confirmar nueva contraseña</label><input class="input" id="cp-c" name="conf" type="password" autocomplete="new-password" maxlength="${S.MAX}"></div>
       </div><div class="modal-foot"><button type="button" class="btn btn-outline" data-m="volver">Cancelar</button><button class="btn btn-primary">Cambiar contraseña</button></div></form>`,
       { acciones: {
         volver: () => M.config(),
         guardar: async f => {
           const ok = App.validar(f, {
             actual: v => !v ? "Escribe tu contraseña actual." : "",
-            nueva: v => v.length < 8 || !/\d/.test(v) ? "Usa al menos 8 caracteres y un número." : v === f.actual.value.trim() ? "La nueva contraseña debe ser distinta a la actual." : "",
+            nueva: v => v === f.actual.value.trim() ? "La nueva contraseña debe ser distinta a la actual." : S.revisar(v, u).error,
             conf: v => v !== f.nueva.value.trim() ? "Las contraseñas no coinciden." : ""
           });
           if (!ok) return;
           const boton = f.querySelector("button.btn-primary"); boton.disabled = true;
-          const cambiada = await App.cuentas.cambiarPassword(u.correo, f.actual.value.trim(), f.nueva.value.trim());
-          boton.disabled = false;
-          if (!cambiada) { App.validar(f, { actual: () => "La contraseña actual no es correcta." }); return; }
+          try {
+            if (App.cuentas.modo === "nube" && await S.filtrada(f.nueva.value.trim())) {
+              App.validar(f, { nueva: () => "Esta contraseña apareció en filtraciones de datos de otros sitios. Elige otra." });
+              return;
+            }
+            const cambiada = await App.cuentas.cambiarPassword(u.correo, f.actual.value.trim(), f.nueva.value.trim());
+            if (!cambiada) { App.validar(f, { actual: () => "La contraseña actual no es correcta." }); return; }
+          } catch (err) { App.validar(f, { nueva: () => err.message }); return; }
+          finally { boton.disabled = false; }
           App.registrar("Cambiaste tu contraseña"); App.guardar();
-          App.cerrarModal(); App.toast("Contraseña actualizada");
+          App.cerrarModal(); App.toast(App.cuentas.modo === "nube" ? "Contraseña actualizada. Se cerró tu sesión en los demás dispositivos." : "Contraseña actualizada");
         } } });
+    App.enlazarMedidor(document, "cp-n", () => u);
   };
 
   M.privacidad = function () {
@@ -216,7 +231,9 @@
           "Se borrará tu cuenta del portal y todos tus datos (publicaciones, viajes, préstamos de prueba). Esta acción no se puede deshacer.",
           "Eliminar cuenta", async () => {
             const correo = App.state.usuario.correo;
-            await App.cuentas.eliminar(correo); await App.borrarDatos(correo); await App.comunidad.borrarDe(correo);
+            try { await App.cuentas.eliminar(correo); }
+            catch (err) { App.toast(err.message); return; }
+            await App.borrarDatos(correo); await App.comunidad.borrarDe(correo);
             App.cerrarSesion(); location.hash = ""; App.render(true); App.toast("Tu cuenta se eliminó");
           }, true),
         guardar: f => {

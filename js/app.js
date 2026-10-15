@@ -17,30 +17,64 @@
   };
 
   // ---------- Inicio de sesión y registro ----------
-  const CORREO_OK = /^[a-z0-9]+([._-][a-z0-9]+)*@utsc\.edu\.mx$/i;
+  // Modos de la pantalla: entrar · crear · recuperar (olvidé mi contraseña) ·
+  // revisa (te mandamos un correo) · nueva (escribe tu contraseña nueva, al abrir el enlace del correo).
+  const CFG = App.config || {};
+  const S = App.seguridad;
+  const NUBE = () => App.cuentas.modo === "nube";
+  const INSTITUCIONAL = /^[a-z0-9]+([._-][a-z0-9]+)*@utsc\.edu\.mx$/i;
+  const CUALQUIERA = /^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}$/i;
+  const correoValido = v => CFG.soloCorreoInstitucional ? INSTITUCIONAL.test(v) : CUALQUIERA.test(v);
+  const errorCorreo = v => !v ? "Escribe tu correo." : !correoValido(v)
+    ? (CFG.soloCorreoInstitucional ? "Usa tu correo que termina en @utsc.edu.mx." : "Escribe un correo válido, por ejemplo nombre@gmail.com.") : "";
+  const ETIQUETA_CORREO = CFG.soloCorreoInstitucional ? "Correo institucional" : "Correo electrónico";
+  const EJEMPLO_CORREO = CFG.soloCorreoInstitucional ? "matricula@utsc.edu.mx" : "tucorreo@ejemplo.com";
+
+  // Cuentas de prueba: solo existen en el modo demostración (sin Supabase).
   const DEMO = { nombre: "Alumno", apellidos: "de Prueba", matricula: "00000", carrera: "DSM", semestre: 4, grupo: "DSM04AV", correo: "demo@utsc.edu.mx" };
   const DEMO_PASS = "demo2026";
-  // Cuenta de prueba con rol de moderador (para probar el panel de moderación).
   const DEMO_MOD = { nombre: "Laura", apellidos: "Moderadora de Prueba", matricula: "90001", carrera: "DSM", semestre: 10, grupo: "MODERACION", correo: "moderador@utsc.edu.mx", rol: "Moderador" };
   const DEMO_MOD_PASS = "modera2026";
   let modoLogin = "entrar";
+  let correoEnviado = { tipo: "", correo: "" };   // para la pantalla "revisa tu correo"
+  let avisoPendiente = "";                        // aviso que se muestra al pintar el formulario
 
   function campoPass(id, nombre, auto, placeholder) {
-    return `<div class="pass-wrap"><input class="input" id="${id}" name="${nombre}" type="password" autocomplete="${auto}" placeholder="${placeholder}">
+    return `<div class="pass-wrap"><input class="input" id="${id}" name="${nombre}" type="password" autocomplete="${auto}" placeholder="${placeholder}" maxlength="${S.MAX}">
       <button type="button" class="pass-toggle" data-ver="${id}" aria-label="Mostrar contraseña">${I("eye")}</button></div>`;
   }
+
+  // Medidor de seguridad de la contraseña con la lista de reglas (se usa también en Cambiar contraseña).
+  App.medidorPassword = function (id) {
+    return `<div class="medidor" data-medidor="${id}" data-nivel="0" aria-live="polite">
+      <div class="medidor-barra"><span></span><span></span><span></span><span></span></div>
+      <ul class="medidor-reglas">${S.revisar("").reglas.map(r => `<li>${U.esc(r.txt)}</li>`).join("")}</ul></div>`;
+  };
+  App.enlazarMedidor = function (root, id, datos) {
+    const inp = root.querySelector("#" + id), med = root.querySelector(`[data-medidor="${id}"]`);
+    if (!inp || !med) return;
+    const pintar = () => {
+      const r = S.revisar(inp.value.trim(), datos ? datos() : null);
+      med.dataset.nivel = inp.value ? Math.max(1, r.nivel) : 0;
+      med.querySelectorAll("li").forEach((li, i) => li.classList.toggle("ok", r.reglas[i].ok));
+    };
+    inp.addEventListener("input", pintar);
+    pintar();
+  };
 
   function formEntrar() {
     return `<form id="form-login" class="login-form" novalidate>
       <div class="login-alert" id="login-alert" hidden></div>
-      <div class="field"><label for="l-correo">Correo institucional</label>
-        <input class="input" id="l-correo" name="correo" type="email" autocomplete="username" placeholder="matricula@utsc.edu.mx"></div>
+      <div class="field"><label for="l-correo">${ETIQUETA_CORREO}</label>
+        <input class="input" id="l-correo" name="correo" type="email" autocomplete="username" placeholder="${EJEMPLO_CORREO}" maxlength="120"></div>
       <div class="field"><label for="l-pass">Contraseña</label>${campoPass("l-pass", "pass", "current-password", "Tu contraseña")}</div>
+      ${NUBE() ? `<button type="button" class="link login-olvide" data-modo="recuperar">¿Olvidaste tu contraseña?</button>` : ""}
       <button class="btn btn-primary btn-lg btn-block" type="submit">Entrar al portal</button>
       <p class="login-switch">¿Aún no tienes cuenta? <button type="button" class="link" data-modo="crear">Crear cuenta</button></p>
-      <div class="login-hint">¿Solo quieres conocer el portal? Entra con la cuenta de prueba: <b class="mono">demo@utsc.edu.mx</b> / <b class="mono">demo2026</b>.
+      ${NUBE() ? `<p class="login-nota">${I("lock")} Conexión cifrada. Tu contraseña la protege Supabase; el portal nunca la guarda.</p>`
+        : `<div class="login-hint">¿Solo quieres conocer el portal? Entra con la cuenta de prueba: <b class="mono">demo@utsc.edu.mx</b> / <b class="mono">demo2026</b>.
         <button type="button" class="btn btn-outline btn-block" id="demo" style="margin-top:10px">Entrar con la cuenta de prueba</button>
-        <button type="button" class="link" id="demo-mod" style="margin-top:8px">${I("shield-check")} Entrar como moderador de prueba</button></div>
+        <button type="button" class="link" id="demo-mod" style="margin-top:8px">${I("shield-check")} Entrar como moderador de prueba</button></div>`}
     </form>`;
   }
 
@@ -60,34 +94,92 @@
         <div class="field"><label for="r-carrera">Carrera</label><select class="select" id="r-carrera" name="carrera">${carreras.map(c => `<option value="${c.clave}">${c.clave} · ${c.nombre.replace("Ing. ", "")}</option>`).join("")}</select></div>
         <div class="field"><label for="r-grupo">Grupo</label><input class="input mono" id="r-grupo" name="grupo" maxlength="10" placeholder="DSM01AV" style="text-transform:uppercase"></div>
       </div>
-      <div class="field"><label for="r-correo">Correo institucional</label><input class="input" id="r-correo" name="correo" type="email" autocomplete="email" placeholder="matricula@utsc.edu.mx"></div>
+      <div class="field"><label for="r-correo">${ETIQUETA_CORREO}</label><input class="input" id="r-correo" name="correo" type="email" autocomplete="email" placeholder="${EJEMPLO_CORREO}" maxlength="120">
+        ${NUBE() ? `<small class="muted">Te mandaremos un enlace para confirmar que el correo es tuyo.</small>` : ""}</div>
       <div class="form-row">
-        <div class="field"><label for="r-pass">Contraseña</label>${campoPass("r-pass", "pass", "new-password", "Mínimo 8, con un número")}</div>
+        <div class="field"><label for="r-pass">Contraseña</label>${campoPass("r-pass", "pass", "new-password", `Mínimo ${S.MIN} caracteres`)}</div>
         <div class="field"><label for="r-pass2">Confirmar</label>${campoPass("r-pass2", "pass2", "new-password", "Repítela")}</div>
       </div>
+      ${App.medidorPassword("r-pass")}
       <button class="btn btn-primary btn-lg btn-block" type="submit">Crear mi cuenta</button>
       <p class="login-switch">¿Ya tienes cuenta? <button type="button" class="link" data-modo="entrar">Inicia sesión</button></p>
-      <p class="login-nota">Tu cuenta se guarda solo en este navegador. Tu contraseña se guarda cifrada.</p>
+      <p class="login-nota">${NUBE() ? `${I("lock")} Tu contraseña se envía cifrada y nunca se guarda en este navegador.` : "Modo demostración: tu cuenta se guarda solo en este navegador y la contraseña se guarda cifrada."}</p>
     </form>`;
   }
 
+  function formRecuperar() {
+    return `<form id="form-recuperar" class="login-form" novalidate>
+      <div class="login-alert" id="login-alert" hidden></div>
+      <p class="login-texto">Escribe el correo de tu cuenta y te mandaremos un enlace para crear una contraseña nueva.</p>
+      <div class="field"><label for="rc-correo">${ETIQUETA_CORREO}</label>
+        <input class="input" id="rc-correo" name="correo" type="email" autocomplete="username" placeholder="${EJEMPLO_CORREO}" maxlength="120"></div>
+      <button class="btn btn-primary btn-lg btn-block" type="submit">Enviar enlace</button>
+      <p class="login-switch"><button type="button" class="link" data-modo="entrar">Volver a iniciar sesión</button></p>
+    </form>`;
+  }
+
+  function panelRevisa() {
+    const conf = correoEnviado.tipo === "confirmar";
+    return `<div class="login-form login-revisa">
+      <div class="login-alert" id="login-alert" hidden></div>
+      <div class="login-icono">${I("mail")}</div>
+      <p class="login-texto">${conf
+        ? `Te enviamos un enlace a <b>${U.esc(correoEnviado.correo)}</b>. Ábrelo para confirmar tu cuenta y después inicia sesión.`
+        : `Si hay una cuenta con <b>${U.esc(correoEnviado.correo)}</b>, te enviamos un enlace para crear una contraseña nueva.`}</p>
+      <p class="login-nota">Ábrelo en este mismo navegador. Si no lo ves en unos minutos, revisa la carpeta de spam o correo no deseado.</p>
+      ${conf ? `<button type="button" class="btn btn-outline btn-block" id="reenviar">Reenviar correo</button>` : ""}
+      <p class="login-switch"><button type="button" class="link" data-modo="entrar">Volver a iniciar sesión</button></p>
+    </div>`;
+  }
+
+  function formNueva() {
+    return `<form id="form-nueva" class="login-form" novalidate>
+      <div class="login-alert" id="login-alert" hidden></div>
+      <p class="login-texto">Escribe tu contraseña nueva para <b>${U.esc((App.perfilRecuperar || {}).correo || "")}</b>.</p>
+      <div class="field"><label for="n-pass">Contraseña nueva</label>${campoPass("n-pass", "pass", "new-password", `Mínimo ${S.MIN} caracteres`)}</div>
+      ${App.medidorPassword("n-pass")}
+      <div class="field"><label for="n-pass2">Confirmar</label>${campoPass("n-pass2", "pass2", "new-password", "Repítela")}</div>
+      <button class="btn btn-primary btn-lg btn-block" type="submit">Guardar y entrar</button>
+    </form>`;
+  }
+
+  const TITULOS = {
+    entrar: ["Iniciar sesión", "Acceso exclusivo para la comunidad universitaria UTSC"],
+    crear: ["Crear cuenta", "Regístrate con tu correo y una contraseña segura"],
+    recuperar: ["Recuperar contraseña", "Te ayudamos a entrar de nuevo"],
+    revisa: ["Revisa tu correo", "Ya casi terminas"],
+    nueva: ["Contraseña nueva", "Elige una contraseña que no uses en otros sitios"]
+  };
+  const FORMULARIOS = { entrar: formEntrar, crear: formCrear, recuperar: formRecuperar, revisa: panelRevisa, nueva: formNueva };
+
   function pantallaLogin() {
     const u = App.CATALOGO.universidad, crear = modoLogin === "crear";
+    const [titulo, sub] = TITULOS[modoLogin];
     return `<div class="login">
       <div class="login-inner ${crear ? "ancho" : ""}">
         <div class="login-logo"><img src="img/logo-utsc-completo.png" alt="Logotipo UTSC, Universidad Tecnológica Santa Catarina" width="128" height="152"></div>
         <div><h1>Portal Universitario</h1><p class="sub">${u.nombre}</p><p class="sub2">${u.ciudad}</p></div>
         <div class="login-card">
-          <header><h2>${crear ? "Crear cuenta" : "Iniciar sesión"}</h2><p>${crear ? "Regístrate con tu correo institucional UTSC" : "Acceso exclusivo para la comunidad universitaria UTSC"}</p></header>
-          <div class="login-panel">${crear ? formCrear() : formEntrar()}</div>
+          <header><h2>${titulo}</h2><p>${sub}</p></header>
+          <div class="login-panel">${FORMULARIOS[modoLogin]()}</div>
         </div>
       </div>
     </div>`;
   }
 
-  function alerta(root, txt) {
+  function alerta(root, txt, tipo) {
     const a = root.querySelector("#login-alert");
+    if (!a) return;
     a.textContent = txt; a.hidden = !txt;
+    a.classList.toggle("ok", tipo === "ok");
+  }
+  function sacudir(form) { form.classList.add("sacudir"); setTimeout(() => form.classList.remove("sacudir"), 450); }
+  function cambiarModo(modo) {
+    modoLogin = modo;
+    App.render();
+    const root = $("#login");
+    const p = root.querySelector(".login-panel"); if (p) p.classList.add("cambio");
+    const primero = root.querySelector(".login-form input"); if (primero) primero.focus();
   }
   async function entrar(perfil, accion) {
     await App.iniciarSesion(perfil);
@@ -105,12 +197,9 @@
 
   function enlazarLogin(root) {
     root.querySelectorAll("[data-modo]").forEach(b => b.addEventListener("click", () => {
-      if (modoLogin === b.dataset.modo) return;
-      modoLogin = b.dataset.modo;
-      App.render();
-      const p = root.querySelector(".login-panel"); p.classList.add("cambio");
-      const primero = root.querySelector(".login-form input"); if (primero) primero.focus();
+      if (modoLogin !== b.dataset.modo) cambiarModo(b.dataset.modo);
     }));
+    if (avisoPendiente) { alerta(root, avisoPendiente.txt || avisoPendiente, avisoPendiente.tipo); avisoPendiente = ""; }
 
     const fLogin = root.querySelector("#form-login");
     if (fLogin) {
@@ -118,22 +207,38 @@
         e.preventDefault();
         alerta(root, "");
         const ok = App.validar(fLogin, {
-          correo: v => !v ? "Escribe tu correo institucional." : !CORREO_OK.test(v) ? "Usa tu correo que termina en @utsc.edu.mx." : "",
+          correo: errorCorreo,
           pass: v => !v ? "Escribe tu contraseña." : ""
         });
         if (!ok) return;
+        const espera = S.esperaRestante();
+        if (espera) { alerta(root, `Hubo demasiados intentos fallidos. Por seguridad, espera ${espera} segundos.`); sacudir(fLogin); return; }
         ocupado(fLogin, true);
+        const correo = fLogin.correo.value.trim().toLowerCase();
         try {
-          const perfil = await App.cuentas.verificar(fLogin.correo.value, fLogin.pass.value);
+          const perfil = await App.cuentas.verificar(correo, fLogin.pass.value.trim());
           if (!perfil) {
-            const existe = await App.cuentas.obtener(fLogin.correo.value);
+            S.fallo();
             ocupado(fLogin, false);
-            alerta(root, existe ? "La contraseña no es correcta." : "No hay una cuenta con ese correo en este navegador. Crea una con «Crear cuenta».");
-            fLogin.classList.add("sacudir"); setTimeout(() => fLogin.classList.remove("sacudir"), 450);
+            // El mismo aviso si el correo no existe o si la contraseña está mal: así nadie puede
+            // averiguar qué correos tienen cuenta.
+            alerta(root, "Correo o contraseña incorrectos.");
+            fLogin.pass.value = ""; fLogin.pass.focus();
+            sacudir(fLogin);
             return;
           }
+          S.exito();
           entrar(perfil, "Iniciaste sesión");
-        } catch (err) { ocupado(fLogin, false); alerta(root, err.message); }
+        } catch (err) {
+          ocupado(fLogin, false);
+          if (err.message === "CONFIRMAR") {
+            correoEnviado = { tipo: "confirmar", correo };
+            avisoPendiente = { txt: "Primero confirma tu correo con el enlace que te enviamos.", tipo: "" };
+            cambiarModo("revisa");
+            return;
+          }
+          alerta(root, err.message);
+        }
       });
       const demo = (datos, pass, accion) => async () => {
         try {
@@ -142,25 +247,28 @@
           entrar(perfil, accion);
         } catch (err) { alerta(root, err.message); }
       };
-      root.querySelector("#demo").addEventListener("click", demo(DEMO, DEMO_PASS, "Entraste con la cuenta de prueba"));
-      root.querySelector("#demo-mod").addEventListener("click", demo(DEMO_MOD, DEMO_MOD_PASS, "Entraste como moderador"));
+      const bDemo = root.querySelector("#demo"), bMod = root.querySelector("#demo-mod");
+      if (bDemo) bDemo.addEventListener("click", demo(DEMO, DEMO_PASS, "Entraste con la cuenta de prueba"));
+      if (bMod) bMod.addEventListener("click", demo(DEMO_MOD, DEMO_MOD_PASS, "Entraste como moderador"));
     }
 
     const fCrear = root.querySelector("#form-crear");
     if (fCrear) {
-      // Sugerencias: correo a partir de la matrícula y grupo a partir de carrera + cuatrimestre.
+      // Sugerencias: grupo a partir de carrera + cuatrimestre (y el correo, si solo se aceptan institucionales).
       let correoEditado = false, grupoEditado = false;
       fCrear.correo.addEventListener("input", () => correoEditado = true);
       fCrear.grupo.addEventListener("input", () => grupoEditado = true);
       const sugerir = () => {
         const m = fCrear.matricula.value.trim();
-        if (!correoEditado) fCrear.correo.value = m ? m + "@utsc.edu.mx" : "";
+        if (CFG.soloCorreoInstitucional && !correoEditado) fCrear.correo.value = m ? m + "@utsc.edu.mx" : "";
         if (!grupoEditado) fCrear.grupo.value = fCrear.carrera.value + String(fCrear.semestre.value).padStart(2, "0") + "AV";
       };
       fCrear.matricula.addEventListener("input", () => { fCrear.matricula.value = fCrear.matricula.value.replace(/\D/g, ""); sugerir(); });
       fCrear.carrera.addEventListener("change", sugerir);
       fCrear.semestre.addEventListener("change", sugerir);
       sugerir();
+      const datos = () => ({ nombre: fCrear.nombre.value, apellidos: fCrear.apellidos.value, matricula: fCrear.matricula.value, correo: fCrear.correo.value });
+      App.enlazarMedidor(root, "r-pass", datos);
 
       fCrear.addEventListener("submit", async e => {
         e.preventDefault();
@@ -170,25 +278,122 @@
           apellidos: v => v.length < 2 ? "Escribe tus apellidos." : "",
           matricula: v => !/^\d{4,8}$/.test(v) ? "La matrícula son solo números (4 a 8 dígitos)." : "",
           grupo: v => !/^[A-Za-z]{2,4}\d{2}[A-Za-z]{1,3}$/.test(v) ? "Escribe tu grupo, por ejemplo DSM04AV." : "",
-          correo: v => !CORREO_OK.test(v) ? "Usa tu correo que termina en @utsc.edu.mx." : "",
-          pass: v => v.length < 8 || !/\d/.test(v) ? "Usa al menos 8 caracteres y un número." : "",
+          correo: errorCorreo,
+          pass: v => S.revisar(v, datos()).error,
           pass2: v => v !== fCrear.pass.value.trim() ? "Las contraseñas no coinciden." : ""
         });
         if (!ok) return;
         ocupado(fCrear, true);
+        const pass = fCrear.pass.value.trim();
         try {
+          if (NUBE() && await S.filtrada(pass)) {
+            ocupado(fCrear, false);
+            App.validar(fCrear, { pass: () => "Esta contraseña apareció en filtraciones de datos de otros sitios. Elige otra." });
+            return;
+          }
+          const correo = fCrear.correo.value.trim().toLowerCase();
           const perfil = await App.cuentas.crear({
             nombre: fCrear.nombre.value.trim(), apellidos: fCrear.apellidos.value.trim(),
             matricula: fCrear.matricula.value.trim(), carrera: fCrear.carrera.value,
             semestre: Number(fCrear.semestre.value), grupo: fCrear.grupo.value.trim().toUpperCase(),
-            correo: fCrear.correo.value.trim().toLowerCase()
-          }, fCrear.pass.value.trim());
+            correo
+          }, pass);
+          if (!perfil) {   // modo nube: falta confirmar el correo
+            correoEnviado = { tipo: "confirmar", correo };
+            cambiarModo("revisa");
+            return;
+          }
           modoLogin = "entrar";
           entrar(perfil, "Creaste tu cuenta");
           App.toast("¡Listo! Tu cuenta quedó creada");
         } catch (err) { ocupado(fCrear, false); alerta(root, err.message); }
       });
     }
+
+    const fRec = root.querySelector("#form-recuperar");
+    if (fRec) {
+      fRec.addEventListener("submit", async e => {
+        e.preventDefault();
+        alerta(root, "");
+        if (!App.validar(fRec, { correo: errorCorreo })) return;
+        ocupado(fRec, true);
+        const correo = fRec.correo.value.trim().toLowerCase();
+        try {
+          await App.cuentas.recuperar(correo);
+          correoEnviado = { tipo: "recuperar", correo };
+          cambiarModo("revisa");
+        } catch (err) { ocupado(fRec, false); alerta(root, err.message); }
+      });
+    }
+
+    const bReenviar = root.querySelector("#reenviar");
+    if (bReenviar) {
+      bReenviar.addEventListener("click", async () => {
+        bReenviar.disabled = true;
+        try {
+          await App.cuentas.reenviarConfirmacion(correoEnviado.correo);
+          alerta(root, "Listo, te enviamos otro enlace.", "ok");
+        } catch (err) { alerta(root, err.message); }
+        // Espera 60 segundos antes de dejar reenviar otra vez.
+        let s = 60;
+        const t = setInterval(() => {
+          bReenviar.textContent = `Reenviar correo (${--s} s)`;
+          if (s <= 0) { clearInterval(t); bReenviar.disabled = false; bReenviar.textContent = "Reenviar correo"; }
+        }, 1000);
+      });
+    }
+
+    const fNueva = root.querySelector("#form-nueva");
+    if (fNueva) {
+      const perfil = App.perfilRecuperar || {};
+      App.enlazarMedidor(root, "n-pass", () => perfil);
+      fNueva.addEventListener("submit", async e => {
+        e.preventDefault();
+        alerta(root, "");
+        if (!App.validar(fNueva, {
+          pass: v => S.revisar(v, perfil).error,
+          pass2: v => v !== fNueva.pass.value.trim() ? "Las contraseñas no coinciden." : ""
+        })) return;
+        ocupado(fNueva, true);
+        const pass = fNueva.pass.value.trim();
+        try {
+          if (await S.filtrada(pass)) {
+            ocupado(fNueva, false);
+            App.validar(fNueva, { pass: () => "Esta contraseña apareció en filtraciones de datos de otros sitios. Elige otra." });
+            return;
+          }
+          await App.cuentas.nuevaPassword(pass);
+          App.perfilRecuperar = null;
+          modoLogin = "entrar";
+          S.exito();
+          await entrar(perfil, "Cambiaste tu contraseña");
+          App.toast("Contraseña actualizada");
+        } catch (err) { ocupado(fNueva, false); alerta(root, err.message); }
+      });
+    }
+  }
+
+  // Lo que pasó al abrir el portal desde un enlace del correo (lo deja App.cargar en nucleo.js).
+  App.avisosDeInicio = function () {
+    const a = App.avisoInicio;
+    App.avisoInicio = null;
+    if (App.perfilRecuperar) modoLogin = "nueva";
+    if (!a) return;
+    if (a.error) { modoLogin = App.perfilRecuperar ? "nueva" : "entrar"; avisoPendiente = a.error; }
+    if (a.accion === "confirmado" && App.sesion) setTimeout(() => App.toast("¡Correo confirmado! Bienvenido al portal"), 300);
+  };
+
+  // Si la sesión se cierra en otra pestaña, o Supabase la invalida, se regresa al login.
+  if (App.cuentas.alCambiar) {
+    App.cuentas.alCambiar(evento => {
+      if (evento === "SIGNED_OUT" && App.sesion) {
+        App.sesion = false;
+        try { localStorage.removeItem(App.cuentas.CLAVE_SESION); } catch (e) { }
+        modoLogin = "entrar";
+        avisoPendiente = "Tu sesión terminó. Vuelve a iniciar sesión.";
+        location.hash = ""; App.render(true);
+      }
+    });
   }
 
   // ---------- App shell ----------
@@ -364,6 +569,7 @@
     // no las espera: se pinta en cuanto se sabe si hay sesión (semana 5: rendimiento).
     const noticias = App.contenido.cargar();
     await App.cargar();
+    App.avisosDeInicio();
     if (App.capacidades.recibido) location.hash = "blog";   // llegó algo compartido desde otra app
     const necesita = () => App.sesion && ["inicio", "noticias"].includes(App.ruta());
     const esperada = necesita();
