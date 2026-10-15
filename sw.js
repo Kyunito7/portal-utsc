@@ -26,7 +26,7 @@
       que envíe la cola de acciones pendientes (ver js/sync.js).
    ===================================================================== */
 
-const VERSION = "v1.8.4";
+const VERSION = "v1.9.0";
 const CACHE_SHELL = `utsc-shell-${VERSION}`;
 const CACHE_IMAGENES = "utsc-imagenes";      // se conserva entre versiones
 const CACHE_DATOS = "utsc-datos";            // contenido (noticias/eventos), se conserva entre versiones
@@ -42,6 +42,9 @@ const APP_SHELL = [
   "./js/iconos.js",
   "./js/datos.js",
   "./js/bd.js",
+  "./js/arranque.js",
+  "./js/config.js",
+  "./js/vendor/supabase.js",
   "./js/cuentas.js",
   "./js/nucleo.js",
   "./js/capacidades.js",
@@ -119,7 +122,9 @@ self.addEventListener("fetch", evento => {
   if (url.origin !== self.location.origin) return;        // otros sitios: sin tocar
   if (url.pathname.includes("/api/")) return;             // solo red: pagos y datos en vivo
 
-  if (url.pathname.includes("/data/")) {
+  if (url.pathname.endsWith("/js/config.js")) {
+    evento.respondWith(redPrimero(req));                   // la configuración siempre la más nueva
+  } else if (url.pathname.includes("/data/")) {
     evento.respondWith(staleWhileRevalidate(evento));
   } else if (req.mode === "navigate") {
     evento.respondWith(redPrimeroPagina(req));
@@ -143,6 +148,18 @@ async function redPrimeroPagina(req) {
     const copia = await caches.match("./index.html", { cacheName: CACHE_SHELL });
     return copia || new Response("<h1>Sin conexión</h1><p>Vuelve a intentarlo cuando tengas internet.</p>",
       { headers: { "Content-Type": "text/html; charset=utf-8" }, status: 503 });
+  }
+}
+
+// Configuración (js/config.js): red primero, para que al pegar las llaves de Supabase
+// se use la versión nueva sin tener que subir VERSION; sin internet, la copia guardada.
+async function redPrimero(req) {
+  try {
+    const resp = await fetch(req, { cache: "no-cache" });
+    if (resp.ok) (await caches.open(CACHE_SHELL)).put(req, resp.clone());
+    return resp;
+  } catch (e) {
+    return (await caches.match(req, { ignoreSearch: true })) || new Response("", { status: 504, statusText: "Sin conexión" });
   }
 }
 
