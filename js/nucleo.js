@@ -88,6 +88,7 @@
     if (App.comunidad && App.comunidad.listo) App.comunidad.guardarYa();
     App.sesion = false; escribir(CLAVE_SESION, null);
     App.cuentas.salir();   // modo nube: invalida la sesión en Supabase
+    App.usarDemo(false);   // si entró con la cuenta de prueba, se regresa al modo real
   };
   App.borrarDatos = async function (correo) {
     escribir(claveVieja(correo), null);

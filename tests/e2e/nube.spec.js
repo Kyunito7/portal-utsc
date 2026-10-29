@@ -53,7 +53,7 @@ async function prepararNube(page, { confirmado = true } = {}) {
 test("registro con correo real: pide confirmar el correo", async ({ page }) => {
   const llamadas = await prepararNube(page);
   await page.goto("/");
-  await expect(page.locator("#demo")).toHaveCount(0);   // sin cuentas de prueba en modo nube
+  await expect(page.locator("#demo")).toBeVisible();    // la cuenta de prueba sigue disponible (modo demostración)
   await page.click('[data-modo="crear"]');
   await page.fill("#r-nombre", "Ana Sofía");
   await page.fill("#r-apellidos", "López Hernández");

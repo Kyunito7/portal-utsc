@@ -71,10 +71,10 @@
       ${NUBE() ? `<button type="button" class="link login-olvide" data-modo="recuperar">¿Olvidaste tu contraseña?</button>` : ""}
       <button class="btn btn-primary btn-lg btn-block" type="submit">Entrar al portal</button>
       <p class="login-switch">¿Aún no tienes cuenta? <button type="button" class="link" data-modo="crear">Crear cuenta</button></p>
-      ${NUBE() ? `<p class="login-nota">${I("lock")} Conexión cifrada. Tu contraseña la protege Supabase; el portal nunca la guarda.</p>`
-        : `<div class="login-hint">¿Solo quieres conocer el portal? Entra con la cuenta de prueba: <b class="mono">demo@utsc.edu.mx</b> / <b class="mono">demo2026</b>.
+      ${NUBE() ? `<p class="login-nota">${I("lock")} Conexión cifrada. Tu contraseña la protege Supabase; el portal nunca la guarda.</p>` : ""}
+      <div class="login-hint">¿Solo quieres conocer el portal? Entra sin registrarte con una cuenta de prueba${NUBE() ? " (sus datos se guardan solo en este navegador)" : `: <b class="mono">demo@utsc.edu.mx</b> / <b class="mono">demo2026</b>`}.
         <button type="button" class="btn btn-outline btn-block" id="demo" style="margin-top:10px">Entrar con la cuenta de prueba</button>
-        <button type="button" class="link" id="demo-mod" style="margin-top:8px">${I("shield-check")} Entrar como moderador de prueba</button></div>`}
+        <button type="button" class="link" id="demo-mod" style="margin-top:8px">${I("shield-check")} Entrar como moderador de prueba</button></div>
     </form>`;
   }
 
@@ -242,10 +242,11 @@
       });
       const demo = (datos, pass, accion) => async () => {
         try {
+          App.usarDemo(true);   // con Supabase configurado, la cuenta de prueba usa el modo demostración
           let perfil = await App.cuentas.verificar(datos.correo, pass);
           if (!perfil) perfil = await App.cuentas.crear(datos, pass);
           entrar(perfil, accion);
-        } catch (err) { alerta(root, err.message); }
+        } catch (err) { App.usarDemo(false); alerta(root, err.message); }
       };
       const bDemo = root.querySelector("#demo"), bMod = root.querySelector("#demo-mod");
       if (bDemo) bDemo.addEventListener("click", demo(DEMO, DEMO_PASS, "Entraste con la cuenta de prueba"));
@@ -384,9 +385,9 @@
   };
 
   // Si la sesión se cierra en otra pestaña, o Supabase la invalida, se regresa al login.
-  if (App.cuentas.alCambiar) {
-    App.cuentas.alCambiar(evento => {
-      if (evento === "SIGNED_OUT" && App.sesion) {
+  if (App.cuentasModos.nube) {
+    App.cuentasModos.nube.alCambiar(evento => {
+      if (evento === "SIGNED_OUT" && App.sesion && App.cuentas.modo === "nube") {
         App.sesion = false;
         try { localStorage.removeItem(App.cuentas.CLAVE_SESION); } catch (e) { }
         modoLogin = "entrar";

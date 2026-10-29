@@ -351,6 +351,9 @@ window.App = window.App || {};
         await this.salir();
       },
 
+      // El cliente de Supabase ya listo (lo usa el blog compartido, js/comunidad.js).
+      async cliente() { await iniciar(); return cliente; },
+
       async salir(todos) {
         await iniciar();
         let error = null;
@@ -361,6 +364,19 @@ window.App = window.App || {};
     };
   })();
 
-  App.cuentas = NUBE ? nube : local;
-  App.cuentas.CLAVE_SESION = CLAVE_SESION;
+  // Aunque haya Supabase, se puede "explorar con una cuenta de prueba" (modo demostración)
+  // sin registrarse: así la maestra o cualquier visitante puede revisar el portal sin correo.
+  // La elección se recuerda mientras dure esa sesión de prueba; al cerrar sesión se regresa al modo real.
+  const CLAVE_MODO = "utsc-portal-modo";
+  if (leerLocal(CLAVE_MODO) === "demo" && !leerLocal(CLAVE_SESION)) guardarLocal(CLAVE_MODO, null);
+  local.CLAVE_SESION = CLAVE_SESION;
+  if (NUBE) nube.CLAVE_SESION = CLAVE_SESION;
+  App.cuentasModos = { nube: NUBE ? nube : null, local };
+  App.cuentas = NUBE && leerLocal(CLAVE_MODO) !== "demo" ? nube : local;
+  // si = true: usar cuentas de prueba (locales). si = false: regresar al modo real (si está configurado).
+  App.usarDemo = function (si) {
+    if (!NUBE) return;
+    guardarLocal(CLAVE_MODO, si ? "demo" : null);
+    App.cuentas = si ? local : nube;
+  };
 })();

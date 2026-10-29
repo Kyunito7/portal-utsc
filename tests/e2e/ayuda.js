@@ -1,8 +1,17 @@
 // Funciones que comparten las pruebas e2e.
 const { expect } = require("@playwright/test");
 
+// Estas pruebas son del modo demostración: se sirve un config.js sin Supabase para no depender
+// del proyecto real (el modo real se prueba en nube.spec.js y blog-nube.spec.js con un Supabase simulado).
+async function modoDemo(page) {
+  // context.route también cubre lo que descarga el service worker (precarga del app shell).
+  await page.context().route("**/js/config.js", r => r.fulfill({ contentType: "application/javascript",
+    body: "window.App = window.App || {}; App.config = { supabaseUrl: '', supabaseKey: '', soloCorreoInstitucional: false };" }));
+}
+
 // Abre el portal y espera a que el service worker esté listo (necesario para probar sin conexión).
 async function abrir(page, ruta = "/") {
+  await modoDemo(page);
   await page.goto(ruta);
   await page.evaluate(() => navigator.serviceWorker.ready);
 }
@@ -32,4 +41,4 @@ async function publicar(page, titulo, texto) {
   await page.click('[data-f="publicar"] .btn-primary');
 }
 
-module.exports = { abrir, entrar, salir, ir, publicar };
+module.exports = { modoDemo, abrir, entrar, salir, ir, publicar };
