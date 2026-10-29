@@ -29,7 +29,22 @@ window.App = window.App || {};
     if (App.toast) App.toast("¡Listo! El Portal UTSC quedó instalado como app");
   });
 
-  K.instalar = async function () {
+  // Antes de la ventana del navegador mostramos nuestra propia confirmación, corta y clara.
+  // La ventana del navegador (Chrome/Edge) no se puede cambiar ni quitar: sale después de "Sí, instalar".
+  K.instalar = function () {
+    if (!avisoInstalar) return K.instalarAhora();
+    App.modal(`<div class="modal-body confirmar-instalar">
+        <img src="img/iconos/icono-192.png" alt="" width="64" height="64">
+        <h2>¿Instalar el Portal UTSC?</h2>
+        <p class="muted">Estás a punto de instalar nuestra app en tu dispositivo. Es gratuita, segura y la puedes quitar cuando quieras.</p>
+        <p class="small muted">${I("shield-check")} App oficial de la Universidad Tecnológica Santa Catarina</p>
+      </div>
+      <div class="modal-foot"><button class="btn btn-outline" data-m="cerrar">Cancelar</button>
+      <button class="btn btn-primary" data-m="si">${I("download")} Sí, instalar</button></div>`,
+      { acciones: { si: () => { App.cerrarModal(); K.instalarAhora(); } } });
+  };
+
+  K.instalarAhora = async function () {
     if (avisoInstalar) {
       avisoInstalar.prompt();
       const { outcome } = await avisoInstalar.userChoice;

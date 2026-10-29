@@ -1,6 +1,6 @@
 {
   "name": "portal-utsc",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "private": true,
   "description": "Portal Universitario UTSC — PWA (Aplicaciones Web, DSM)",
   "scripts": {

@@ -2,6 +2,11 @@
 <html lang="es-MX">
 <head>
   <meta charset="utf-8">
+  <!-- Seguridad (CSP): el navegador solo ejecuta scripts de este mismo sitio y solo se conecta
+       a este sitio, a Supabase (inicio de sesión) y a Have I Been Pwned (contraseñas filtradas).
+       Así, aunque alguien lograra meter código en una publicación, no podría robar tu sesión. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.pwnedpasswords.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Portal UTSC</title>
   <meta name="description" content="Portal universitario de la Universidad Tecnológica de Santa Catarina: blog, kárdex, horarios, pagos, trámites, biblioteca y DriverUTSC.">
@@ -18,16 +23,14 @@
   <link rel="preload" href="fonts/outfit.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="fonts/fraunces.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/app.css">
-  <!-- Modo oscuro: se aplica antes de pintar para que no "parpadee". La primera vez sigue al sistema;
-       después, lo que elijas en Configuración → Apariencia (js/menu-usuario.js, M.tema). -->
-  <script>try { document.documentElement.dataset.tema = localStorage.getItem("utsc-tema") || (matchMedia("(prefers-color-scheme: dark)").matches ? "oscuro" : "claro"); } catch (e) {}</script>
-  <!-- Si no hay sesión, se oculta el shell desde el inicio para que no "parpadee" -->
-  <script>try { if (!localStorage.getItem("utsc-portal-sesion")) document.documentElement.classList.add("sin-sesion"); } catch (e) { document.documentElement.classList.add("sin-sesion"); }</script>
+  <!-- Modo oscuro y "sin sesión" se aplican antes de pintar para que no "parpadee" (ver js/arranque.js) -->
+  <script src="js/arranque.js"></script>
 
   <!-- Scripts al final de la carga (defer) para que el shell se pinte de inmediato -->
   <script defer src="js/iconos.js"></script>
   <script defer src="js/datos.js"></script>
   <script defer src="js/bd.js"></script>
+  <script defer src="js/config.js"></script>
   <script defer src="js/cuentas.js"></script>
   <script defer src="js/nucleo.js"></script>
   <script defer src="js/capacidades.js"></script>

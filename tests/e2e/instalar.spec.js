@@ -18,3 +18,28 @@ for (const boton of ['.instalar-app .btn-ghost', '.instalar-app .cerrar']) {
     await expect(page.locator(".instalar-app")).toHaveCount(0);
   });
 }
+
+test("Instalar pide confirmación antes de abrir la ventana del navegador", async ({ page }) => {
+  await abrir(page);
+  await entrar(page);
+  // Simula que el navegador ofrece instalar la app
+  await page.evaluate(() => {
+    const e = new Event("beforeinstallprompt", { cancelable: true });
+    window.__prompts = 0;
+    e.prompt = () => { window.__prompts++; };
+    e.userChoice = Promise.resolve({ outcome: "dismissed" });
+    window.dispatchEvent(e);
+  });
+  await page.click('.instalar-app [data-a="instalar"]');
+  const confirmar = page.locator(".confirmar-instalar");
+  await expect(confirmar).toContainText("¿Instalar el Portal UTSC?");
+  expect(await page.evaluate(() => window.__prompts)).toBe(0);   // todavía no abre la del navegador
+
+  await page.click('[data-m="cerrar"]');                          // Cancelar
+  await expect(confirmar).toHaveCount(0);
+  expect(await page.evaluate(() => window.__prompts)).toBe(0);
+
+  await page.click('.instalar-app [data-a="instalar"]');
+  await page.click('[data-m="si"]');                              // Sí, instalar
+  await expect.poll(() => page.evaluate(() => window.__prompts)).toBe(1);
+});
