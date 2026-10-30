@@ -238,7 +238,7 @@ Cuentas de prueba: alumno `demo@utsc.edu.mx` / `demo2026` y moderador `moderador
 | Tipo | Qué revisa | Herramienta |
 |---|---|---|
 | Unitarias (14) | Filtro de moderación (incluye falsos positivos como «pera»); que `APP_SHELL` tenga todos los archivos; manifest y noticias válidos | `node --test` |
-| De extremo a extremo (32 × 2) | Cuentas (demostración y Supabase simulado), blog compartido entre dos navegadores, moderación por IA y su respaldo, modo sin conexión y cola de envío, pagos bloqueados offline, moderación completa, enlaces compartidos, share target, notificaciones, métricas | Playwright, en escritorio y en celular (Pixel 7) |
+| De extremo a extremo (33 × 2) | Cuentas (demostración y Supabase simulado), blog compartido entre dos navegadores, moderación por IA y su respaldo, modo sin conexión y cola de envío, pagos bloqueados offline, moderación completa, enlaces compartidos, share target, notificaciones, métricas | Playwright, en escritorio y en celular (Pixel 7) |
 | Seguridad de la base (39) | Reglas RLS del blog: quién ve, publica, modera, reporta y avisa | PostgreSQL local (`supabase/pruebas/`) |
 
 Correrlas en tu computadora (necesitas Node 18 o más nuevo y Python 3):
