@@ -33,7 +33,7 @@
         <div class="mini-stats"><div><b>${ac.promedio.toFixed(1)}</b><small>Promedio</small></div><div><b>${ac.creditos}/${ac.total}</b><small>Créditos</small></div><div><b>${ac.semestre}°</b><small>Cuatrimestre</small></div></div>
         <div>
           <div class="kv"><span>Carrera</span><b>${U.carrera(u.carrera)}</b></div>
-          <div class="kv"><span>Correo</span><b class="mono">${u.correo}</b></div>
+          <div class="kv"><span>Correo</span><b class="mono">${U.esc(u.correo)}</b></div>
           <div class="kv"><span>Teléfono</span><b class="mono">${U.esc(u.telefono || "Sin registrar")}</b></div>
           <div class="kv"><span>Sobre mí</span><b>${U.esc(u.bio || "Sin descripción")}</b></div>
           <div class="kv"><span>Rol</span><b>${u.rol}</b></div>
@@ -230,10 +230,10 @@
         borrar: () => App.confirmar("Eliminar mi cuenta",
           "Se borrará tu cuenta del portal y todos tus datos (publicaciones, viajes, préstamos de prueba). Esta acción no se puede deshacer.",
           "Eliminar cuenta", async () => {
-            const correo = App.state.usuario.correo;
+            const correo = App.state.usuario.correo, identidad = App.comunidad.yo();
             try { await App.cuentas.eliminar(correo); }
             catch (err) { App.toast(err.message); return; }
-            await App.borrarDatos(correo); await App.comunidad.borrarDe(correo);
+            await App.borrarDatos(correo); await App.comunidad.borrarDe(identidad);
             App.cerrarSesion(); location.hash = ""; App.render(true); App.toast("Tu cuenta se eliminó");
           }, true),
         guardar: f => {
@@ -251,7 +251,7 @@
 
   M.descargarDatos = function () {
     const s = App.state;
-    const datos = { usuario: s.usuario, ajustes: s.ajustes, publicaciones: App.comunidad.posts.filter(p => p.correo === s.usuario.correo).map(p => ({ titulo: p.titulo, texto: p.texto, categoria: p.cat, moderacion: App.moderacion.estado(p) })),
+    const datos = { usuario: s.usuario, ajustes: s.ajustes, publicaciones: App.comunidad.posts.filter(p => p.correo === App.comunidad.yo()).map(p => ({ titulo: p.titulo, texto: p.texto, categoria: p.cat, moderacion: App.moderacion.estado(p) })),
       pagos: s.historialPagos, solicitudes: s.solicitudes, prestamos: s.prestamos, viajes: s.reservasViaje, actividad: s.actividad };
     const txt = JSON.stringify(datos, null, 2);
     try {

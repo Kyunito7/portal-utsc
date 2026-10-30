@@ -21,8 +21,11 @@ window.App = window.App || {};
     "joto", "maricon", "retrasad", "mongol(es)?\\b", "malparid", "hdp\\b", "ctm\\b", "naco(s|a|as)?\\b"];
   const FRASES_BLOQUEAR = ["hijo de puta", "chinga tu madre", "chingas a tu madre", "vete a la verga", "ve a chingar"];
   // Groserías leves o palabras ambiguas: van a revisión, no se bloquean.
-  const REVISAR = ["pinche", "ching", "cabron", "mamad", "pedo", "culo", "perra", "zorra", "mierda", "carajo",
+  const REVISAR = ["pinche", "ching", "cabron", "mamad", "pedo", "culo", "mierda", "carajo",
     "alv\\b", "ptm\\b", "nmms\\b", "wtf\\b"];
+  // Palabras que solo son groserías con la letra doble ("perra" sí, "pera" no): se buscan sin
+  // juntar las letras repetidas, por eso van aparte. Así "pera", "peras" y "perrita" no se marcan.
+  const REVISAR_DOBLE = /\b(perr|zorr)a+s?\b/g;
   // Amenazas o acoso: a revisión con prioridad alta.
   const AMENAZAS = [
     /te voy a (matar|golpear|partir|madrear|buscar|romper|encontrar)/,
@@ -38,6 +41,10 @@ window.App = window.App || {};
   // Convierte "P3ND3J0", "p.e.n.d.e.j.o", "peeendejooo" o "pendéjo" en "pendejo".
   const LEET = { "0": "o", "1": "i", "3": "e", "4": "a", "5": "s", "7": "t", "@": "a", "$": "s", "!": "i" };
   function normalizar(texto) {
+    return normalizarBase(texto).replace(/([a-z])\1+/g, "$1");   // "peeendejooo" → "pendejo"
+  }
+  // Igual que normalizar(), pero las letras repetidas quedan en máximo dos ("perrrra" → "perra").
+  function normalizarBase(texto) {
     let t = String(texto).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
     // Une letras sueltas separadas: "p u t o", "p.u.t.o", "p-u-t-o"
     t = t.replace(/\b(?:[a-z0-9@$!][\s.\-_*]+){2,}[a-z0-9@$!]\b/g, m => m.replace(/[\s.\-_*]+/g, ""));
@@ -46,7 +53,7 @@ window.App = window.App || {};
       const antes = s[i - 1] || " ", despues = s[i + 1] || " ";
       return /[a-z]/.test(antes) || /[a-z]/.test(despues) ? LEET[c] : c;
     });
-    return t.replace(/([a-z])\1+/g, "$1");   // "peeendejooo" → "pendejo"
+    return t.replace(/([a-z])\1{2,}/g, "$1$1");
   }
   const sinRepetir = s => s.replace(/([a-z])\1+/g, "$1");
   const raiz = lista => new RegExp("\\b(" + lista.map(sinRepetir).join("|") + ")\\w*", "g");
@@ -63,7 +70,7 @@ window.App = window.App || {};
     FRASES_BLOQUEAR.forEach(f => { if (t.includes(sinRepetir(f))) fuertes.push(f); });
     if (fuertes.length) bloquear.push("Lenguaje ofensivo: «" + fuertes.slice(0, 3).join("», «") + "»");
 
-    const leves = [...new Set((t.match(RX_REVISAR) || []))];
+    const leves = [...new Set((t.match(RX_REVISAR) || []).concat(normalizarBase(original).match(REVISAR_DOBLE) || []))];
     if (leves.length) revisar.push("Groserías: «" + leves.slice(0, 3).join("», «") + "»");
 
     if (AMENAZAS.some(rx => rx.test(t))) { revisar.push("Posible amenaza o acoso"); prioridad = "alta"; }
@@ -84,14 +91,42 @@ window.App = window.App || {};
     return { decision, motivos: bloquear.concat(revisar), prioridad, fuente: "Filtro automático" };
   }
 
+  // ---------- IA en el servidor (Supabase Edge Function "moderar") ----------
+  // Solo se usa en modo real con App.config.moderacionIA = true. La clave de la IA vive en los
+  // secretos de Supabase (ver supabase/functions/moderar/index.ts), nunca en este archivo.
+  // Si la función no responde en 8 s o falla, decide el filtro local de arriba.
+  const DECISIONES = ["aprobar", "revisar", "bloquear"];
+  async function revisarConIA(contenido) {
+    const cfg = App.config || {};
+    if (!cfg.moderacionIA || !App.cuentas || App.cuentas.modo !== "nube" || !navigator.onLine) return null;
+    try {
+      const sb = await App.cuentas.cliente();
+      const espera = new Promise((_, mal) => setTimeout(() => mal(new Error("tiempo")), 8000));
+      const { data, error } = await Promise.race([sb.functions.invoke("moderar", { body: contenido }), espera]);
+      if (error || !data || !DECISIONES.includes(data.decision)) return null;
+      // La IA nunca aprueba algo que el filtro local bloquearía (doble seguro).
+      const local = analizar([contenido.titulo, contenido.texto].filter(Boolean).join("\n"));
+      if (local.decision === "bloquear") return local;
+      return { decision: data.decision, motivos: (data.motivos || []).map(String).slice(0, 4),
+        prioridad: data.prioridad === "alta" ? "alta" : "normal", fuente: "IA" };
+    } catch (e) { return null; }
+  }
+
   App.moderacion = {
     normalizar,
     analizar,
     // Punto único que usan las pantallas. Es async para que mañana pueda ser una IA en el servidor:
     //   const r = await fetch(SUPABASE_URL + "/functions/v1/moderar", { method: "POST", body: JSON.stringify(contenido) });
     //   return await r.json();   // { decision, motivos, prioridad, fuente: "IA" }
+    // contenido = { titulo?, texto, imagen? (data URL) }.
     async revisar(contenido) {
-      return analizar([contenido.titulo, contenido.texto].filter(Boolean).join("\n"));
+      const ia = await revisarConIA(contenido);
+      if (ia) return ia;
+      const r = analizar([contenido.titulo, contenido.texto].filter(Boolean).join("\n"));
+      // El filtro local no puede ver imágenes: si trae una, la revisa un moderador antes de publicarse.
+      if (contenido.imagen && r.decision === "aprobar")
+        return Object.assign(r, { decision: "revisar", motivos: ["Trae una imagen: un moderador la revisa antes de publicarla"] });
+      return r;
     },
     estado: x => (x && x.mod && x.mod.estado) || "aprobado",
     esModerador: () => !!(App.state && App.state.usuario.rol === "Moderador"),

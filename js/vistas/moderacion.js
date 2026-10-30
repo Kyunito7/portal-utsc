@@ -64,7 +64,9 @@
     C.registrar(aprobar ? "Aprobó" : "Rechazó", esComentario ? { txt: item.txt, autor: item.autor } : item, aprobar ? "" : item.mod.nota);
     const a = esComentario ? "o" : "a";   // "aprobado" (comentario) / "aprobada" (publicación)
     const que = esComentario ? "Tu comentario en «" + post.titulo + "»" : "Tu publicación «" + post.titulo + "»";
-    C.avisar(item.correo, "Moderación", aprobar ? que + " fue aprobad" + a + " y ya es visible para todos."
+    C.remoto("moderar", { tabla: esComentario ? "comentario" : "publicacion", id: item.id, mod: item.mod,
+      reportesRevisados: esComentario ? undefined : true }, (aprobar ? "Aprobar «" : "Rechazar «") + (post.titulo || "") + "»");
+    C.avisar(C.destino(item), "Moderación", aprobar ? que + " fue aprobad" + a + " y ya es visible para todos."
       : que + (estabaVisible ? " fue retirad" + a + " del blog" : " no se publicó") + ". Motivo: " + item.mod.nota + ".", "blog");
     C.guardar();
     App.render();
@@ -104,6 +106,7 @@
       descartar(el) {
         const p = C.buscar(el.dataset.post);
         p.reportesRevisados = true;
+        C.remoto("moderar", { tabla: "publicacion", id: p.id, reportesRevisados: true }, "Descartar reportes de «" + p.titulo + "»");
         C.registrar("Aprobó", p, "Reportes descartados");
         C.guardar(); App.render(); App.toast("Reportes descartados. La publicación sigue visible.");
       },

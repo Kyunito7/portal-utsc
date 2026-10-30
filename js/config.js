@@ -23,5 +23,9 @@ App.config = {
 
   // true = solo se aceptan correos que terminan en @utsc.edu.mx
   // false = cualquier correo real (Gmail, Outlook, etc.); igual se tiene que confirmar.
-  soloCorreoInstitucional: false
+  soloCorreoInstitucional: false,
+
+  // true = el blog se modera con IA (función de Supabase "moderar", ver supabase/LEEME.md).
+  // false = decide el filtro local de js/moderacion.js. Si la IA falla, también decide el filtro.
+  moderacionIA: false
 };

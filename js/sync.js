@@ -13,11 +13,16 @@
   const ETIQUETA_SYNC = "utsc-cola";
 
   // ---------- Servidor de prueba ----------
-  // El portal todavía no tiene backend. App.api simula uno: tarda un poco y
-  // falla si no hay internet. Cuando exista el servidor real, solo cambia esto
-  // por un fetch("https://api…", { method: "POST", body: JSON.stringify(accion) }).
+  // En modo real (Supabase), lo del blog (publicar, comentar, me gusta, reportes, moderación,
+  // avisos) se guarda en la base de datos con App.comunidad.enviar (js/comunidad.js).
+  // Contacto y trámites siguen simulados: tardan un poco y fallan si no hay internet.
   App.api = {
-    enviar(accion) {
+    async enviar(accion) {
+      if (!navigator.onLine) throw new Error("Sin conexión");
+      if (App.comunidad && App.comunidad.nube()) {
+        const r = await App.comunidad.enviar(accion);
+        if (r) return r;
+      }
       return new Promise((resolve, reject) => {
         if (!navigator.onLine) return reject(new Error("Sin conexión"));
         setTimeout(() => navigator.onLine ? resolve({ ok: true, recibido: Date.now(), id: accion.id }) : reject(new Error("Sin conexión")), 500);
@@ -64,15 +69,23 @@
   };
 
   // Envía todo lo pendiente, en orden. Si una falla, se detiene y lo intenta luego.
+  let otraVuelta = false;   // llegó algo nuevo mientras se enviaba
   cola.procesar = async function () {
-    if (cola.procesando || !App.sesion || !navigator.onLine) return 0;
-    cola.procesando = true;
+    if (cola.procesando) { otraVuelta = true; return 0; }
+    if (!App.sesion || !navigator.onLine) return 0;
+    cola.procesando = true; otraVuelta = false;
     let enviadas = 0, avisar = 0;   // solo se avisa de lo que se hizo sin conexión
     try {
       for (const accion of await cola.pendientes()) {
         try {
           await App.api.enviar(accion);
         } catch (e) {
+          if (e && e.permanente) {
+            // El servidor la rechazó (permisos o datos inválidos): reintentar no sirve, se quita de la cola.
+            await quitar(accion.id);
+            App.toast("No se pudo enviar: " + accion.resumen + ". " + e.message, "error");
+            continue;
+          }
           accion.intentos++;
           if (await App.bd.disponible()) await App.bd.guardar("cola", accion);
           break;
@@ -84,11 +97,18 @@
       }
     } finally {
       cola.procesando = false;
+      // Lo que se agregó durante el envío no espera al siguiente evento: se manda de una vez.
+      if (otraVuelta) setTimeout(() => cola.procesar(), 0);
     }
     if (enviadas) {
       App.guardar();
       await cola.contar();
-      if (App.sesion) App.render();
+      // Se repinta sin borrar lo que el alumno esté escribiendo (por ejemplo, otra publicación).
+      if (App.sesion) {
+        const escribiendo = document.activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
+        if (App.ruta() === "blog") { App.refrescar("lista"); pintarChip(); }
+        else if (!escribiendo && !App._modalAbierto) App.render();
+      }
       if (avisar && document.visibilityState !== "visible" && App.capacidades)
         App.capacidades.mostrar({ titulo: "Portal UTSC", texto: avisar === 1 ? "Se envió lo que hiciste sin conexión." : "Se enviaron " + avisar + " acciones que hiciste sin conexión.", ir: "blog", etiqueta: "sync" });
       if (avisar) App.toast(avisar === 1 ? "Se envió 1 acción pendiente" : "Se enviaron " + avisar + " acciones pendientes");
@@ -134,5 +154,6 @@
         <button class="btn btn-primary" data-m="sync" ${!lista.length || !navigator.onLine ? "disabled" : ""}>${I("refresh-cw")} Sincronizar ahora</button></div>`,
       { acciones: { sync: async el => { el.disabled = true; App.cerrarModal(); await cola.procesar(); } } });
   };
-  const ICONOS = { publicacion: "notebook-pen", comentario: "message-circle", mensaje: "mail", tramite: "file-text" };
+  const ICONOS = { publicacion: "notebook-pen", comentario: "message-circle", mensaje: "mail", tramite: "file-text",
+    reaccion: "heart", reporte: "flag", eliminar: "trash-2", moderar: "shield-check", aviso: "bell", bitacora: "history" };
 })();
