@@ -14,7 +14,10 @@ test("aprueba texto normal", () => {
     "Comparto mis apuntes del parcial, 40 ejercicios de SQL",
     "Qué buen proyecto, felicidades al equipo",
     "Gonzalo Álvarez ganó el concurso de cálculo",   // "alv" y "cálculo" no deben confundirse
-    "Un estudio sobre Mongolia y la computadora"
+    "Un estudio sobre Mongolia y la computadora",
+    "Me comí una pera en la cafetería",   // "pera" no es "perra"
+    "Compré peras y manzanas",
+    "Mi perrita se llama Luna"
   ]) assert.equal(decision(t), "aprobar", t);
 });
 
@@ -46,4 +49,15 @@ test("normalizar quita acentos, números disfrazados y letras repetidas", () => 
   assert.equal(normalizar("PÉÉÉNDEJO"), "pendejo");
   assert.equal(normalizar("p3nd3j0"), "pendejo");
   assert.equal(normalizar("40 ejercicios"), "40 ejercicios");   // los números sueltos no se tocan
+});
+
+test("las groserías con letra doble se siguen detectando", () => {
+  for (const t of ["eres una perra", "qué zorraaa", "PERRRRA"]) assert.equal(decision(t), "revisar", t);
+});
+
+test("una publicación con imagen pasa a revisión si no hay IA", async () => {
+  const r = await global.App.moderacion.revisar({ titulo: "Mi comida", texto: "Hoy en la cafetería", imagen: "data:image/jpeg;base64,AAAA" });
+  assert.equal(r.decision, "revisar");
+  const sin = await global.App.moderacion.revisar({ titulo: "Mi comida", texto: "Hoy en la cafetería" });
+  assert.equal(sin.decision, "aprobar");
 });

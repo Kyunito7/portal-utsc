@@ -16,6 +16,20 @@ window.App = window.App || {};
     return d.toISOString();
   }
 
+  // Periodo actual de la UTSC, que trabaja por cuatrimestres: Ene-Abr, May-Ago y Sep-Dic.
+  // Se calcula con la fecha de hoy para que el portal no se quede en un año fijo.
+  const CICLOS = [
+    { nombre: "Ene-Abr", inicio: [0, 8], fin: [3, 30] },
+    { nombre: "May-Ago", inicio: [4, 4], fin: [7, 21] },
+    { nombre: "Sep-Dic", inicio: [8, 1], fin: [11, 11] }
+  ];
+  const iso = (a, [m, d]) => a + "-" + String(m + 1).padStart(2, "0") + "-" + String(d).padStart(2, "0");
+  App.periodoActual = function (fecha) {
+    const f = fecha || new Date(), anio = f.getFullYear(), ciclo = Math.floor(f.getMonth() / 4), c = CICLOS[ciclo];
+    return { ciclo, anio, nombre: c.nombre + " " + anio, inicio: iso(anio, c.inicio), fin: iso(anio, c.fin), CICLOS: CICLOS.map(x => x.nombre) };
+  };
+  const PERIODO = App.periodoActual();
+
   App.CATALOGO = {
     universidad: {
       nombre: "Universidad Tecnológica de Santa Catarina",
@@ -25,9 +39,9 @@ window.App = window.App || {};
       telefono: "81-2222-3300",
       correo: "portal@utsc.edu.mx",
       dominio: "@utsc.edu.mx",
-      periodo: "Ago-Dic 2026",
-      inicioPeriodo: "2026-08-31",
-      finPeriodo: "2026-12-11",
+      periodo: PERIODO.nombre,
+      inicioPeriodo: PERIODO.inicio,
+      finPeriodo: PERIODO.fin,
       creditosCarrera: 120,
       version: "v1.1"
     },
@@ -51,18 +65,19 @@ window.App = window.App || {};
 
     categoriasBlog: ["Académico", "Vida universitaria", "Recursos", "Eventos", "Deportes", "Tecnología"],
 
-    // Kárdex: cuatrimestres cursados. La calificación null = materia en curso.
+    // Kárdex: materias de cada cuatrimestre. La calificación null = materia en curso.
+    // El periodo de cada uno lo calcula App.kardex() (js/nucleo.js) a partir del periodo actual.
     kardex: [
-      { num: 1, periodo: "Ene-Jun 2025", materias: [
+      { num: 1, materias: [
         ["Fundamentos de Programación", 5, 10], ["Cálculo Diferencial", 5, 9], ["Arquitectura de Computadoras", 4, 9],
         ["Inglés I", 3, 9], ["Metodología de la Programación", 5, 10], ["Educación Física I", 2, 10]] },
-      { num: 2, periodo: "Ago-Dic 2025", materias: [
+      { num: 2, materias: [
         ["Programación Orientada a Objetos", 5, 9], ["Cálculo Integral", 5, 8], ["Bases de Datos", 4, 9],
         ["Inglés II", 3, 10], ["Desarrollo Web", 5, 10], ["Educación Física II", 2, 9]] },
-      { num: 3, periodo: "Ene-Jun 2026", materias: [
+      { num: 3, materias: [
         ["Estructuras de Datos", 5, 9], ["Probabilidad y Estadística", 5, 9], ["Bases de Datos Avanzadas", 4, 10],
         ["Inglés III", 3, 9], ["Redes de Computadoras", 5, 9], ["Educación Física III", 2, 10]] },
-      { num: 4, periodo: "Ago-Dic 2026", actual: true, materias: [
+      { num: 4, materias: [
         ["Desarrollo Multiplataforma", 5, null], ["Redes Neuronales", 5, null], ["Seguridad Informática", 4, null],
         ["Inglés IV", 3, null], ["Gestión de Proyectos de TI", 4, null], ["Educación Física IV", 2, null]] }
     ],

@@ -20,7 +20,7 @@
             <div class="field"><label for="ct-n">Nombre completo</label><input class="input" id="ct-n" value="${U.esc(U.nombreCompleto())}" readonly></div>
             <div class="field"><label for="ct-m">Matrícula</label><input class="input" id="ct-m" value="${U.esc(u.matricula)}" readonly></div>
           </div>
-          <div class="field"><label for="ct-e">Correo electrónico</label><input class="input" id="ct-e" value="${u.correo}" readonly></div>
+          <div class="field"><label for="ct-e">Correo electrónico</label><input class="input" id="ct-e" value="${U.esc(u.correo)}" readonly></div>
           <div class="field"><label for="ct-d">Departamento</label><select class="select" id="ct-d" name="depto">
             <option value="">Selecciona un departamento</option>${deps.map(d => `<option value="${d.id}" ${d.id === elegido ? "selected" : ""}>${d.nombre}</option>`).join("")}</select></div>
           <div class="field"><label for="ct-a">Asunto</label><input class="input" id="ct-a" name="asunto" maxlength="100" placeholder="Ej. Solicitud de constancia de estudios"></div>

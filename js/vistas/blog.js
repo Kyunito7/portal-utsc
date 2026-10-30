@@ -4,8 +4,9 @@
 (function () {
   const U = App.util, C = App.comunidad, MOD = App.moderacion;
   const local = { cat: "Todos", q: "", imagen: null, abiertos: {} };
-  // Publicaciones de la comunidad que no están cargadas en este prototipo (para las tendencias).
-  const BASE_TENDENCIAS = { ExamenFinal: 36, HackNL2026: 23, ServicioSocial: 16, RedesNeuronales: 11, UTSC2026: 8 };
+  // Solo se muestran imágenes guardadas por el portal (JPEG/PNG/WebP en base64): así un dato
+  // alterado en la base no puede meter atributos ni scripts en la etiqueta <img>.
+  const imagenSegura = src => typeof src === "string" && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(src);
 
   function hashtags(txt) { return (txt.match(/#[\wáéíóúñÁÉÍÓÚÑ]+/g) || []).map(t => t.slice(1)); }
   function textoConTags(txt) {
@@ -18,7 +19,7 @@
       .filter(p => !q || (p.titulo + " " + p.texto + " " + p.autor).toLowerCase().includes(q));
   }
   function tendencias() {
-    const c = Object.assign({}, BASE_TENDENCIAS);
+    const c = {};
     C.posts.filter(p => MOD.estado(p) === "aprobado").forEach(p => hashtags(p.texto).forEach(t => c[t] = (c[t] || 0) + 1));
     return Object.entries(c).sort((a, b) => b[1] - a[1]).slice(0, 5);
   }
@@ -50,7 +51,7 @@
     const s = App.state, propio = C.esMio(p), mostrarMat = !propio || s.ajustes.mostrarMatricula;
     const abierto = local.abiertos[p.id], liked = C.meGusta(p), comentarios = C.comentariosVisibles(p);
     return `<article class="card post ${MOD.estado(p) !== "aprobado" ? "post-revision" : ""}" id="post-${p.id}">
-      ${p.imagen ? `<img class="post-img" src="${p.imagen}" alt="" loading="lazy" decoding="async">` : p.portada ? U.portada(p.portada, "post-img") : ""}
+      ${imagenSegura(p.imagen) ? `<img class="post-img" src="${p.imagen}" alt="${U.esc(p.imagenAlt || "Imagen que compartió " + p.autor)}" loading="lazy" decoding="async">` : p.portada ? U.portada(p.portada, "post-img") : ""}
       <div class="post-body">
         <div class="row-between"><div class="row"><span class="avatar">${U.iniciales(p.autor)}</span>
           <div><b style="display:block;font-size:14px">${U.esc(p.autor)}</b><span class="mono small muted">${mostrarMat ? U.esc(p.matricula) + " · " : ""}${U.hace(p.t)}</span></div></div>
@@ -106,7 +107,8 @@
             <div class="row"><span class="avatar">${U.iniciales(U.nombreCompleto())}</span><div><b style="display:block;font-size:14px">${U.esc(U.nombreCompleto())}</b><span class="mono small muted">${U.esc(u.matricula)} · ${U.esc(u.grupo)}</span></div></div>
             <div class="field"><label for="bp-t" hidden>Título</label><input class="input" id="bp-t" name="titulo" maxlength="120" placeholder="Título de tu publicación" style="font-weight:600"></div>
             <div class="field"><label for="bp-x" hidden>Mensaje</label><textarea class="textarea" id="bp-x" name="texto" maxlength="2000" placeholder="Escribe tu mensaje, comparte recursos, noticias o experiencias... Usa #hashtags para que te encuentren."></textarea></div>
-            ${local.imagen ? `<div class="composer-preview"><img src="${local.imagen}" alt="Vista previa de la imagen"><button type="button" class="btn btn-sm btn-dark" data-a="quitarImg">Quitar</button></div>` : ""}
+            ${local.imagen ? `<div class="composer-preview"><img src="${local.imagen}" alt="Vista previa de la imagen"><button type="button" class="btn btn-sm btn-dark" data-a="quitarImg">Quitar</button></div>
+            <div class="field"><label for="bp-alt" class="small">Describe tu imagen <span class="muted" style="font-weight:400">(opcional, ayuda a quien usa lector de pantalla)</span></label><input class="input" id="bp-alt" name="alt" maxlength="200" placeholder="Ej. Chilaquiles de la cafetería"></div>` : ""}
             <div class="composer-foot">
               <label for="bp-c" hidden>Categoría</label><select class="select" id="bp-c" name="cat">${cats.map(c => `<option>${c}</option>`).join("")}</select>
               <label class="file-btn">${I("camera")} Imagen<input type="file" accept="image/*" data-c="imagen"></label>
@@ -122,9 +124,9 @@
           ${MOD.esModerador() ? `<a class="card card-pad mod-acceso" href="#moderacion">${I("shield-check")}<div class="grow"><b>Panel de moderación</b><span class="small muted">${pendientesMod ? pendientesMod + " por revisar" : "Todo al día"}</span></div>${pendientesMod ? `<span class="count">${pendientesMod}</span>` : ""}</a>` : ""}
           <div class="card card-pad"><label for="bp-q" hidden>Buscar publicaciones</label><input class="input" id="bp-q" type="search" placeholder="Buscar publicaciones..." value="${U.esc(local.q)}" data-c="buscar"></div>
           <div class="card card-pad"><h2 style="font-size:19px;margin-bottom:10px">Tendencias esta semana</h2>
-            ${tendencias().map(([t, n]) => `<div class="trend"><button data-a="tag" data-tag="${U.esc(t)}">#${U.esc(t)}</button><span class="mono small muted">${n} posts</span></div>`).join("")}</div>
+            ${tendencias().map(([t, n]) => `<div class="trend"><button data-a="tag" data-tag="${U.esc(t)}">#${U.esc(t)}</button><span class="mono small muted">${n} ${n === 1 ? "post" : "posts"}</span></div>`).join("") || `<p class="small muted">Aún no hay #hashtags. Usa uno en tu publicación.</p>`}</div>
           <div class="card-dark card-pad stack"><h2 style="font-size:19px">Comunidad UTSC</h2>
-            <div class="stats" style="justify-content:space-between"><div class="stat"><b class="c-orange">1,284</b><small>Alumnos</small></div><div class="stat"><b class="c-orange">${C.visibles().length + 338}</b><small>Posts este mes</small></div><div class="stat"><b class="c-orange">98%</b><small>Aprobados</small></div></div>
+            ${(() => { const e = C.estadisticas(); return `<div class="stats" style="justify-content:space-between"><div class="stat"><b class="c-orange">${e.autores}</b><small>Autores</small></div><div class="stat"><b class="c-orange">${e.mes}</b><small>Posts este mes</small></div><div class="stat"><b class="c-orange">${e.aprobados}%</b><small>Aprobados</small></div></div>`; })()}
             <div class="notice-box">${I("shield-check")} Moderación automática activa. Lo que tenga groserías, enlaces sospechosos o posibles amenazas pasa a revisión antes de publicarse.</div></div>
         </aside>
       </div></div>`;
@@ -140,7 +142,7 @@
         App.toast("Se agregó lo que compartiste. Revisa y publica.");
       }
       const id = App.consulta().get("p");
-      if (!id) return;
+      if (!id) { if (C.nube() && Date.now() - C.ultimaSync > 15000) C.refrescar(); return; }
       const p = C.buscar(id);
       if (!p || !C.puedoVer(p)) { App.toast("Esa publicación ya no está disponible.", "error"); return; }
       if (!document.getElementById("post-" + id)) { local.cat = "Todos"; local.q = ""; App.refrescar("lista"); }   // estaba filtrada
@@ -160,12 +162,13 @@
       cat(el) { local.cat = el.dataset.cat; App.render(); },
       tag(el) { local.q = "#" + el.dataset.tag; local.cat = "Todos"; App.render(); window.scrollTo(0, 0); },
       like(el) {
-        const p = C.buscar(el.dataset.id), yo = App.state.usuario.correo;
+        const p = C.buscar(el.dataset.id), yo = C.yo();
         p.likedBy = p.likedBy || [];
         const ahora = !p.likedBy.includes(yo);
         if (ahora) p.likedBy.push(yo); else p.likedBy = p.likedBy.filter(c => c !== yo);
         p.likes += ahora ? 1 : -1;
         C.guardar(); App.refrescar("lista");
+        C.remoto("reaccion", { post: p.id, si: ahora }, (ahora ? "Me gusta en «" : "Quitar me gusta en «") + p.titulo + "»");
         if (ahora) {
           const b = document.querySelector(`[data-a="like"][data-id="${p.id}"]`);
           if (b) b.classList.add("pop");
@@ -183,7 +186,8 @@
           <div class="modal-foot"><button type="button" class="btn btn-outline" data-m="cerrar">Cancelar</button><button class="btn btn-danger">Reportar</button></div></form>`,
           { acciones: { enviar: f => {
             p.reportes = p.reportes || [];
-            p.reportes.push({ correo: App.state.usuario.correo, motivo: f.motivo.value, t: Date.now() });
+            p.reportes.push({ correo: C.yo(), motivo: f.motivo.value, t: Date.now() });
+            C.remoto("reporte", { post: p.id, motivo: f.motivo.value }, "Reporte de «" + p.titulo + "»");
             p.reportesRevisados = false;
             let oculto = false;
             if (p.reportes.length >= MOD.REPORTES_PARA_OCULTAR && MOD.estado(p) === "aprobado") {
@@ -199,7 +203,9 @@
       },
       eliminar(el) {
         App.confirmar("Eliminar publicación", "La publicación y sus comentarios se borrarán. Esta acción no se puede deshacer.", "Eliminar", () => {
+          const p = C.buscar(el.dataset.id);
           C.posts = C.posts.filter(x => x.id !== el.dataset.id); C.guardar(); App.render(); App.toast("Publicación eliminada");
+          if (p) C.remoto("eliminar", { id: p.id }, "Eliminar «" + p.titulo + "»");
         }, true);
       }
     },
@@ -210,10 +216,10 @@
         if (!f) return;
         if (f.size > 8 * 1024 * 1024) { App.toast("La imagen pesa más de 8 MB. Elige una más ligera.", "error"); return; }
         // Conserva lo escrito antes de volver a pintar.
-        const form = el.closest("form"), borrador = { t: form.titulo.value, x: form.texto.value, c: form.cat.value };
+        const form = el.closest("form"), borrador = { t: form.titulo.value, x: form.texto.value, c: form.cat.value, a: form.alt ? form.alt.value : "" };
         U.leerImagen(f, 1200).then(src => {
           local.imagen = src; App.render();
-          const nf = document.querySelector('[data-f="publicar"]'); nf.titulo.value = borrador.t; nf.texto.value = borrador.x; nf.cat.value = borrador.c;
+          const nf = document.querySelector('[data-f="publicar"]'); nf.titulo.value = borrador.t; nf.texto.value = borrador.x; nf.cat.value = borrador.c; if (nf.alt) nf.alt.value = borrador.a;
         }).catch(err => App.toast(err.message, "error"));
       }
     },
@@ -225,12 +231,13 @@
         });
         if (!ok) return;
         const titulo = f.titulo.value.trim(), texto = f.texto.value.trim(), cat = f.cat.value;
-        const r = await MOD.revisar({ titulo, texto });
+        const imagenAlt = f.alt ? f.alt.value.trim().slice(0, 200) : "";
+        const r = await MOD.revisar({ titulo, texto, imagen: local.imagen || undefined });
         if (r.decision === "bloquear") { avisoBloqueo(f, r); return; }
-        const u = App.state.usuario, id = "p" + Date.now();
+        const u = App.state.usuario, id = C.nuevoId("p");
         // La publicación aparece al instante; si hay que revisarla, solo la ve su autor.
-        C.posts.unshift({ id, autor: U.nombreCompleto(), matricula: u.matricula, correo: u.correo, cat, t: Date.now(),
-          titulo, texto, imagen: local.imagen, portada: null, likes: 0, likedBy: [], reportes: [], comentarios: [], pendiente: true,
+        C.posts.unshift({ id, autor: U.nombreCompleto(), matricula: u.matricula, correo: C.yo(), cat, t: Date.now(),
+          titulo, texto, imagen: local.imagen, imagenAlt, portada: null, likes: 0, likedBy: [], reportes: [], comentarios: [], pendiente: true,
           mod: { estado: r.decision === "revisar" ? "revision" : "aprobado", motivos: r.motivos, prioridad: r.prioridad, t: Date.now(), por: r.fuente } });
         if (r.decision === "revisar") C.avisar("rol:Moderador", "Moderación", "Nueva publicación en revisión: «" + titulo + "» (" + r.motivos.join(", ") + ")", "moderacion");
         local.imagen = null; local.cat = "Todos"; local.q = "";
@@ -244,8 +251,8 @@
         if (!txt) { f.txt.focus(); return; }
         const r = await MOD.revisar({ texto: txt });
         if (r.decision === "bloquear") { App.toast("Tu comentario no se publicó: " + r.motivos.join(". "), "error"); return; }
-        const p = C.buscar(f.dataset.id), u = App.state.usuario, id = "c" + Date.now();
-        p.comentarios.push({ id, autor: U.nombreCompleto(), correo: u.correo, txt, t: Date.now(), pendiente: true,
+        const p = C.buscar(f.dataset.id), u = App.state.usuario, id = C.nuevoId("c");
+        p.comentarios.push({ id, autor: U.nombreCompleto(), correo: C.yo(), txt, t: Date.now(), pendiente: true,
           mod: { estado: r.decision === "revisar" ? "revision" : "aprobado", motivos: r.motivos, prioridad: r.prioridad, t: Date.now(), por: r.fuente } });
         if (r.decision === "revisar") C.avisar("rol:Moderador", "Moderación", "Nuevo comentario en revisión en «" + p.titulo + "»", "moderacion");
         local.abiertos[p.id] = true;
