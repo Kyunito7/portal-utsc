@@ -203,11 +203,11 @@
   // y el actual "en curso". Las materias salen del catálogo (se repiten si hay más de 4).
   App.kardex = function () {
     const base = App.CATALOGO.kardex, actual = Math.max(1, Number(App.state.usuario.semestre) || 1);
-    const CICLOS = ["Ene-Abr", "May-Ago", "Sep-Dic"], ROMANOS = ["", " II", " III"];
+    const hoy = App.periodoActual(), CICLOS = hoy.CICLOS, ROMANOS = ["", " II", " III"];
     const lista = [];
     for (let n = 1; n <= actual; n++) {
       const b = base[(n - 1) % base.length], vuelta = Math.floor((n - 1) / base.length);
-      let ciclo = 2 - (actual - n), anio = 2026;          // el cuatrimestre actual es Sep-Dic 2026
+      let ciclo = hoy.ciclo - (actual - n), anio = hoy.anio;   // el cuatrimestre actual es el periodo de hoy
       while (ciclo < 0) { ciclo += 3; anio--; }
       lista.push({
         num: n, actual: n === actual, periodo: CICLOS[ciclo] + " " + anio,
@@ -247,7 +247,10 @@
   // contenido: HTML. acciones: { nombre: fn(el, evento, modal) } para elementos con data-m="nombre".
   App.modal = function (contenido, opciones) {
     opciones = opciones || {};
+    // Accesibilidad: al cerrar, el foco regresa al botón que abrió la ventana.
+    const origen = App._modalAbierto ? App._focoAntesModal : document.activeElement;
     App.cerrarModal(true);
+    App._focoAntesModal = origen;
     const ov = document.createElement("div");
     ov.className = "overlay";
     ov.innerHTML = `<div class="modal ${opciones.ancho ? "wide" : ""}" role="dialog" aria-modal="true">${contenido}</div>`;
@@ -292,6 +295,9 @@
     if (!ov) return;
     App._modalAbierto = null;
     document.body.style.overflow = "";
+    const origen = App._focoAntesModal;
+    App._focoAntesModal = null;
+    if (!inmediato && origen && origen.isConnected && typeof origen.focus === "function") { try { origen.focus({ preventScroll: true }); } catch (e) { } }
     const reducir = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (inmediato || reducir) { ov.remove(); return; }
     ov.classList.add("cerrando");

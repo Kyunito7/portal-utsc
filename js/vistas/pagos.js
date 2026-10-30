@@ -34,11 +34,12 @@
             ${[["tarjeta", I("credit-card") + " Tarjeta"], ["spei", I("landmark") + " Transferencia SPEI"], ["oxxo", I("store") + " Efectivo en OXXO"]].map(([v, t], i) => `<label><input type="radio" name="metodo" value="${v}" ${i ? "" : "checked"} data-mc="metodo"><span>${t}</span></label>`).join("")}
           </div></div>
         <div id="pago-tarjeta" class="form-grid">
-          <div class="field"><label for="pg-n">Número de tarjeta</label><input class="input mono" id="pg-n" name="num" inputmode="numeric" autocomplete="cc-number" placeholder="4152 3135 0000 0000" maxlength="19"></div>
+          <div class="field"><label for="pg-n">Número de tarjeta</label><input class="input mono" id="pg-n" name="num" inputmode="numeric" autocomplete="off" placeholder="4242 4242 4242 4242" maxlength="19"></div>
           <div class="form-row">
-            <div class="field"><label for="pg-v">Vencimiento</label><input class="input mono" id="pg-v" name="venc" placeholder="MM/AA" maxlength="5" autocomplete="cc-exp"></div>
-            <div class="field"><label for="pg-c">CVV</label><input class="input mono" id="pg-c" name="cvv" inputmode="numeric" placeholder="123" maxlength="4" autocomplete="cc-csc"></div>
+            <div class="field"><label for="pg-v">Vencimiento</label><input class="input mono" id="pg-v" name="venc" placeholder="MM/AA" maxlength="5" autocomplete="off"></div>
+            <div class="field"><label for="pg-c">CVV</label><input class="input mono" id="pg-c" name="cvv" inputmode="numeric" placeholder="123" maxlength="4" autocomplete="off"></div>
           </div>
+          <button type="button" class="link small" data-m="prueba">${I("credit-card")} Usar tarjeta de prueba</button>
         </div>
         <div id="pago-ref" class="card card-pad" hidden style="background:var(--sand)">
           <p class="small muted">Se generará una referencia para pagar en el banco u OXXO. El cargo se marca como pagado cuando Caja confirme el depósito.</p></div>
@@ -46,6 +47,13 @@
       </div>
       <div class="modal-foot"><button type="button" class="btn btn-outline" data-m="cerrar">Cancelar</button><button class="btn btn-primary">Pagar ${U.dinero(cargo.monto)}</button></div></form>`,
       { acciones: {
+        // Llena una tarjeta de prueba para que nadie escriba los datos de una tarjeta real.
+        prueba: (el, e, modal) => {
+          const d = new Date(), aa = String((d.getFullYear() + 3) % 100).padStart(2, "0");
+          modal.querySelector("#pg-n").value = "4242 4242 4242 4242";
+          modal.querySelector("#pg-v").value = String(d.getMonth() + 1).padStart(2, "0") + "/" + aa;
+          modal.querySelector("#pg-c").value = "123";
+        },
         metodo: (el, e, modal) => {
           const t = el.value === "tarjeta";
           modal.querySelector("#pago-tarjeta").hidden = !t;

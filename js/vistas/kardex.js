@@ -36,7 +36,7 @@
         <div class="tabs">${sems.map(s => `<button class="tab sem-tab ${s === sel ? "active" : ""}" data-a="sem" data-n="${s.num}">${s.num}° Cuatri <small>· ${s.periodo.split(" ")[0]}</small></button>`).join("")}</div>
         <section class="card" style="overflow:hidden">
           <div class="card-pad row-between" style="padding-bottom:16px"><div><h2 style="font-size:20px">${sel.num}° Cuatrimestre</h2><span class="mono small muted">${sel.periodo}${sel.actual ? " (actual)" : ""}</span></div>
-            ${promSem != null ? `<span class="badge b-teal">Promedio del semestre: ${promSem.toFixed(1)}</span>` : ""}</div>
+            ${promSem != null ? `<span class="badge b-teal">Promedio del cuatrimestre: ${promSem.toFixed(1)}</span>` : ""}</div>
           <div class="table-wrap"><table>
             <thead><tr><th>Materia</th><th class="t-center">Créditos</th><th class="t-center">Calificación</th><th class="t-center">Estado</th></tr></thead>
             <tbody>${sel.materias.map(([m, c, cal]) => `<tr><td><b style="font-weight:600">${m}</b></td><td class="t-center mono">${c}</td><td class="t-center mono">${cal == null ? "—" : cal.toFixed(1)}</td><td class="t-center">${estado(cal)}</td></tr>`).join("")}</tbody>
