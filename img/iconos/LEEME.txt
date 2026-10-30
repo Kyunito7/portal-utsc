@@ -1,0 +1,7 @@
+ICONOS UTSC
+
+Formato: SVG vectorial, lienzo 256 x 256, viewBox 0 0 24 24.
+Color predeterminado: #1A1F2E.
+Los archivos pueden abrirse en Figma, Illustrator, Inkscape o un navegador.
+Para cambiar el color, edita el atributo stroke del elemento <svg>.
+Identidad recomendada: naranja #E8761A, teal #00A99D y azul oscuro #1A1F2E.
