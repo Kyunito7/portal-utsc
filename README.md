@@ -8,7 +8,7 @@ Proyecto de la materia Aplicaciones Web — Ingeniería en Desarrollo de Softwar
 
 **En línea:** https://kyunito7.github.io/portal-utsc/
 
-> **Prototipo académico.** Las cuentas, el blog y la moderación funcionan dentro del navegador (IndexedDB); todavía no hay servidor. Los datos de kárdex, pagos, trámites y horarios son de demostración y no se cobra nada.
+> **Dos modos.** Con Supabase configurado (`js/config.js`), las cuentas, el blog y la moderación son reales y compartidos entre todos los dispositivos. Los botones de **cuenta de prueba** siguen disponibles y usan el modo demostración (datos solo en ese navegador). Los datos de kárdex, pagos, trámites y horarios son de demostración y no se cobra nada.
 
 ## Equipo
 
@@ -58,12 +58,12 @@ El portal funciona **sin internet** después de abrirlo una vez con conexión.
   - **Aviso de «Sin conexión»** y una línea amarilla en el encabezado mientras no hay internet.
   - En **Configuración → Uso sin conexión**: versión del caché, número de archivos guardados y espacio usado.
 
-**Cómo publicar un cambio:** después de modificar cualquier archivo, sube `VERSION` en `sw.js` (por ejemplo `v1.8.0` → `v1.8.1`). Si agregas un archivo nuevo, agrégalo también a la lista `APP_SHELL`.
+**Cómo publicar un cambio:** después de modificar cualquier archivo, sube `VERSION` en `sw.js` (por ejemplo `v1.10.0` → `v1.10.1`). Si agregas un archivo nuevo, agrégalo también a la lista `APP_SHELL`.
 
 **Cómo probarlo:**
 1. `python3 -m http.server 8000` y abre `http://localhost:8000` (el service worker solo funciona en `localhost` o `https`).
 2. Chrome → DevTools → **Application → Service workers**: debe aparecer `sw.js` como *activated and running*.
-3. **Application → Cache storage → utsc-shell-v1.8.0**: ahí están los archivos guardados.
+3. **Application → Cache storage → utsc-shell-v1.10.0**: ahí están los archivos guardados.
 4. En **Network** marca **Offline** y recarga: el portal sigue funcionando.
 
 ## Semana 4: Datos offline y estrategias
@@ -163,19 +163,19 @@ Como el blog no tiene supervisores las 24 horas, todo lo que se publica pasa por
 - Con **3 reportes** una publicación se oculta sola hasta que un moderador decida.
 - **Rol Moderador** con su **Panel de moderación** (`#moderacion`): pestañas *En revisión*, *Reportadas* e *Historial*. Al aprobar o rechazar, el autor recibe un aviso con el motivo.
 - Cuenta de prueba de moderador: `moderador@utsc.edu.mx` / `modera2026` (botón «Entrar como moderador de prueba»).
-- El blog ahora es **compartido** entre las cuentas del navegador (`js/comunidad.js`, tabla `comunidad` en IndexedDB): así el moderador ve lo que publican los alumnos. Simula al servidor.
+- **Modo real:** el blog vive en Supabase (`supabase/blog.sql`) y lo ven todos los alumnos desde cualquier dispositivo; la base aplica las reglas con RLS (lo que está en revisión solo lo ven su autor y los moderadores, y solo los moderadores cambian el estado). Una copia queda en IndexedDB para abrirlo sin internet, y lo que se hace sin conexión se envía después por la cola.
+- **Modo demostración:** el blog es compartido entre las cuentas de ese navegador (`js/comunidad.js`, tabla `comunidad` en IndexedDB).
 
-**IA para la entrega final:** `App.moderacion.revisar()` es el único punto que decide. Se cambiará por una llamada a una función de Supabase que consulte una IA. La clave de la IA va en el servidor, nunca en el JavaScript del portal. Las pantallas no cambian.
-
-> **Limitaciones de esta etapa (prototipo local):** la moderación corre en el navegador, así que un usuario con conocimientos podría saltársela desactivando JavaScript; será confiable cuando se mueva al servidor (Edge Function). Y el blog "compartido" vive en el IndexedDB de **cada navegador**: el moderador ve lo que se publica *en su equipo*, no lo de otros dispositivos. La moderación y el muro realmente multiusuario llegan cuando entre Supabase (PR #8).
+**Moderación con IA:** con `moderacionIA: true` en `js/config.js`, `App.moderacion.revisar()` consulta la función de Supabase `moderar` (`supabase/functions/moderar/index.ts`), que revisa texto **e imagen**. La clave de la IA vive en los secretos de Supabase. Si la IA falla, decide el filtro local; sin IA, lo que trae imagen pasa a revisión. Pasos en `supabase/LEEME.md`.
 
 ## Cuentas de usuario
 
-- Pantallas de **Iniciar sesión** y **Crear cuenta** (nombre, matrícula, carrera, cuatrimestre, grupo, correo `@utsc.edu.mx` y contraseña).
-- Las cuentas se guardan en el navegador con **IndexedDB** (`js/cuentas.js`). La contraseña no se guarda: se guarda un hash **PBKDF2** con sal aleatoria.
+- Pantallas de **Iniciar sesión**, **Crear cuenta** y, en modo real, **Olvidé mi contraseña**.
+- **Modo real (Supabase Auth):** correo confirmado, contraseña guardada por Supabase con bcrypt, revisión de contraseñas filtradas, límite de intentos y rol de moderador desde `app_metadata`. Guía: `supabase/LEEME.md`.
+- **Modo demostración:** las cuentas se guardan en el navegador con **IndexedDB** (`js/cuentas.js`) con un hash **PBKDF2** y sal aleatoria.
 - Los datos de cada alumno (publicaciones, pagos, trámites, viajes) se guardan por separado en IndexedDB (desde la semana 4).
 - Botón **«Explorar con una cuenta de prueba»** para revisar el portal sin registrarse (`demo@utsc.edu.mx` / `demo2026`).
-- Más adelante `App.cuentas` se puede reemplazar por Supabase sin cambiar las pantallas. **Recomendado:** usar **Supabase Auth** (que guarda y verifica la contraseña de forma segura) en vez de verificar contra la tabla `usuarios` por nuestra cuenta; así `usuarios` solo guarda el perfil. Las políticas de seguridad de la base están en `pg_04_seguridad_rls.sql` y ya quedan listas para ese modelo.
+- Aunque Supabase esté activado, los botones de cuenta de prueba siguen funcionando (modo demostración), para revisar el portal sin registrarse.
 
 ## Fluidez
 
@@ -219,7 +219,9 @@ tests/e2e/              pruebas de extremo a extremo (Playwright)
 js/contenido.js         descarga de noticias y eventos
 js/sync.js              cola de envío y sincronización
 js/moderacion.js        moderador automático (filtro; después IA)
-js/comunidad.js         blog compartido, avisos entre usuarios y bitácora
+js/comunidad.js         blog compartido (Supabase o IndexedDB), avisos y bitácora
+js/config.js            URL y llave pública de Supabase, moderación con IA
+supabase/               autenticación, blog con RLS, función de IA y pruebas de la base
 js/menu-usuario.js      perfil, configuración, privacidad
 js/vistas/*.js          una vista por sección
 js/app.js               login, shell, rutas y render
@@ -235,8 +237,9 @@ Cuentas de prueba: alumno `demo@utsc.edu.mx` / `demo2026` y moderador `moderador
 
 | Tipo | Qué revisa | Herramienta |
 |---|---|---|
-| Unitarias (12) | Filtro de moderación; que `APP_SHELL` tenga todos los archivos; manifest y noticias válidos | `node --test` |
-| De extremo a extremo (15 × 2) | Cuentas, modo sin conexión y cola de envío, pagos bloqueados offline, moderación completa (alumno → moderador → aviso), enlaces compartidos, share target, notificaciones, métricas | Playwright, en escritorio y en celular (Pixel 7) |
+| Unitarias (14) | Filtro de moderación (incluye falsos positivos como «pera»); que `APP_SHELL` tenga todos los archivos; manifest y noticias válidos | `node --test` |
+| De extremo a extremo (32 × 2) | Cuentas (demostración y Supabase simulado), blog compartido entre dos navegadores, moderación por IA y su respaldo, modo sin conexión y cola de envío, pagos bloqueados offline, moderación completa, enlaces compartidos, share target, notificaciones, métricas | Playwright, en escritorio y en celular (Pixel 7) |
+| Seguridad de la base (39) | Reglas RLS del blog: quién ve, publica, modera, reporta y avisa | PostgreSQL local (`supabase/pruebas/`) |
 
 Correrlas en tu computadora (necesitas Node 18 o más nuevo y Python 3):
 

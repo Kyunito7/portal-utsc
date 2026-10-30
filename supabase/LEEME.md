@@ -26,7 +26,7 @@ El portal tiene dos modos (se elige en `js/config.js`):
 ## Pasos para activarlo (una sola vez)
 
 1. Entra a <https://supabase.com>, crea una cuenta gratis y un **New project** (o usa el que ya tiene el equipo para la base de datos).
-2. **SQL Editor → New query**, pega todo `supabase/autenticacion.sql` y presiona **Run**.
+2. **SQL Editor → New query**, pega todo `supabase/autenticacion.sql` y presiona **Run**. Después, en otra *New query*, pega todo `supabase/blog.sql` y presiona **Run** (crea el blog compartido; al final deben salir 6 tablas con `rls = true`).
 3. **Authentication → Sign In / Providers → Email**: deja activado **Confirm email**. Si aparece, pon **Minimum password length = 10** y **Password requirements = Letters and digits**.
 4. **Authentication → URL Configuration**:
    - **Site URL**: `http://localhost:3000`
@@ -39,7 +39,8 @@ El portal tiene dos modos (se elige en `js/config.js`):
    ```
 
    Esas dos llaves son públicas a propósito. **Nunca** pongas la llave `secret` / `service_role`.
-6. Abre el portal (`npx serve .`), crea una cuenta con tu correo real y abre el enlace que te llega.
+6. Abre el portal (`python3 -m http.server 8000`), crea una cuenta con tu correo real y abre el enlace que te llega.
+7. **Authentication → Emails → SMTP Settings**: conecta un correo (sección de abajo). Sin esto, solo el equipo recibe el enlace de confirmación.
 
 ## Importante sobre los correos
 
@@ -54,3 +55,40 @@ Al final de `supabase/autenticacion.sql` hay un `UPDATE` comentado: cámbiale el
 ## Pruebas
 
 `npm test` incluye `tests/e2e/nube.spec.js`, que prueba el modo real con un Supabase simulado (registro, correo sin confirmar, contraseña filtrada, recuperación, enlace caducado y que el rol no se pueda falsificar).
+
+## Para la evaluación (cuenta de prueba)
+
+Aunque Supabase esté activado, la pantalla de inicio sigue teniendo **«Entrar con la cuenta de prueba»** y **«Entrar como moderador de prueba»**. Esas cuentas usan el modo demostración (sus datos se guardan solo en ese navegador), así la maestra puede revisar todo el portal sin registrarse. Al cerrar sesión se regresa al modo real.
+
+Para que la maestra pruebe el **blog compartido real**, créenle una cuenta (Authentication → Users → *Add user* → *Create new user*, con *Auto Confirm User*) y, si quieren que vea el panel, háganla moderadora con el `UPDATE` de `autenticacion.sql`.
+
+## Blog compartido (`supabase/blog.sql`)
+
+| Tabla | Qué guarda | Quién puede |
+|---|---|---|
+| `blog_publicaciones` | publicaciones, imagen y estado de moderación | ver lo aprobado (o lo propio); publicar a su nombre; solo moderadores cambian el estado |
+| `blog_comentarios` | comentarios | igual que las publicaciones; solo en publicaciones aprobadas |
+| `blog_reacciones` | me gusta | cada quien pone o quita el suyo |
+| `blog_reportes` | reportes (con 3 se oculta sola) | cada quien reporta a su nombre; solo él y los moderadores lo ven |
+| `blog_avisos` | avisos entre usuarios | un alumno solo avisa a los moderadores; los moderadores a cualquiera |
+| `blog_bitacora` | decisiones de moderación | solo moderadores |
+
+Las reglas se probaron con 39 pruebas en PostgreSQL local (`supabase/pruebas/blog-rls.sql`; las instrucciones están al inicio del archivo).
+
+## Moderación con IA (opcional)
+
+`supabase/functions/moderar/index.ts` revisa el texto **y la imagen** de cada publicación con IA. La clave de la IA se guarda en los secretos de Supabase, nunca en el portal.
+
+1. Consigue una clave de API de Anthropic (<https://console.anthropic.com>; tiene costo por uso, muy bajo para un blog escolar).
+2. Desde la carpeta del proyecto:
+
+   ```bash
+   npx supabase login
+   npx supabase link --project-ref TU-PROYECTO
+   npx supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
+   npx supabase functions deploy moderar
+   ```
+
+3. En `js/config.js` cambia `moderacionIA: false` a `true` y sube `VERSION` en `sw.js`.
+
+Si la función falla o tarda más de 8 segundos, decide el filtro local (`js/moderacion.js`), y la IA nunca puede aprobar algo que el filtro bloquearía. Sin IA, toda publicación con imagen pasa a revisión de un moderador.
